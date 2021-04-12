@@ -70,23 +70,23 @@ class Model(nn.Module):
         self.clscnt = [1 for i in range(70)]
         self.alpha = 0.9
 
-    def update_classavg(self, features, clas):
-        for feature,cls in zip(features,clas):
-            loss = (71 / 70) * F.mse_loss(feature, self.clsavg[cls].clone())
-            alpha = min(1 - 1 / (self.clscnt[cls] + 1), self.alpha)
-            with torch.no_grad():
-                self.clsavg[cls].mul_(alpha).add_((1 - alpha) * feature)
-            return loss
+    # def update_classavg(self, features, clas):
+    #     for feature,cls in zip(features,clas):
+    #         loss = (71 / 70) * F.mse_loss(feature, self.clsavg[cls].clone())
+    #         alpha = min(1 - 1 / (self.clscnt[cls] + 1), self.alpha)
+    #         with torch.no_grad():
+    #             self.clsavg[cls].mul_(alpha).add_((1 - alpha) * feature)
+    #         return loss
 
 
-    def forward(self, x ,clas = torch.Tensor([])):
+    def forward(self, x):
         x = self.feature(x)
-        y = x[0]
-        y = torch.repeat_interleave(y.unsqueeze(0), repeats = x.shape[0], dim = 0)
-        x = torch.cat((y,x),dim = 1)
-        x = torch.sigmoid(self.fcn(x))
-        x = x.view(x.size(0),-1)
-        return x
+        # y = x[0]
+        # y = torch.repeat_interleave(y.unsqueeze(0), repeats = x.shape[0], dim = 0)
+        # x = torch.cat((y,x),dim = 1)
+        # x = torch.sigmoid(self.fcn(x))
+        # x = x.view(x.size(0),-1)
+        return x.squeeze()
 
         # batchnum = x.size(0)
         #
@@ -115,26 +115,26 @@ class Model(nn.Module):
         # else:
         #     return z
 
-    def classavg(self, x, cls):
-        x = self.feature(x)
-        try:
-            self.clsavg[cls][0] += x
-            self.clsavg[cls][1] += 1
-        except:
-            self.clsavg[cls]= [x,1]
-
-    def pretest(self):
-        self.classfeature = (self.clsavg[0][0] / self.clsavg[0][1])
-        for cls in self.clsavg[1:]:
-            self.classfeature = torch.cat((self.classfeature, cls[0] / cls[1]), dim =0)
-
-    def test(self, x):
-        x = self.feature(x)
-        x = torch.repeat_interleave(x, repeats = self.classfeature.shape[0], dim = 0)
-        x = torch.cat((x,self.classfeature),dim = 1)
-        x = torch.sigmoid(self.fcn(x))
-        x = x.view(-1,x.size(0))
-        return x
+    # def classavg(self, x, cls):
+    #     x = self.feature(x)
+    #     try:
+    #         self.clsavg[cls][0] += x
+    #         self.clsavg[cls][1] += 1
+    #     except:
+    #         self.clsavg[cls]= [x,1]
+    #
+    # def pretest(self):
+    #     self.classfeature = (self.clsavg[0][0] / self.clsavg[0][1])
+    #     for cls in self.clsavg[1:]:
+    #         self.classfeature = torch.cat((self.classfeature, cls[0] / cls[1]), dim =0)
+    #
+    # def test(self, x):
+    #     x = self.feature(x)
+    #     x = torch.repeat_interleave(x, repeats = self.classfeature.shape[0], dim = 0)
+    #     x = torch.cat((x,self.classfeature),dim = 1)
+    #     x = torch.sigmoid(self.fcn(x))
+    #     x = x.view(-1,x.size(0))
+    #     return x
 
     def feature(self,x):
 
@@ -152,7 +152,7 @@ class Model(nn.Module):
             x, _ = gcn(x, self.A * importance)
 
         # global pooling
-        x = F.avg_pool2d(x, x.size()[2:])
+        x = F.max_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         return x
 
@@ -246,8 +246,9 @@ class st_gcn(nn.Module):
                 nn.Conv2d(
                     in_channels,
                     out_channels,
-                    kernel_size=1,
-                    stride=(stride, 1)),
+                    kernel_size=(3, 1),
+                    stride=(stride, 1),
+                    padding=(1, 0)),
                 nn.BatchNorm2d(out_channels),
             )
 

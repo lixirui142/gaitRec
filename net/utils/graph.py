@@ -26,13 +26,14 @@ class Graph():
                  layout='openpose',
                  strategy='uniform',
                  max_hop=1,
-                 dilation=1):
+                 dilation=1,
+                 hop_range = 2):
         self.max_hop = max_hop
         self.dilation = dilation
 
         self.get_edge(layout)
         self.hop_dis = get_hop_distance(
-            self.num_node, self.edge, max_hop=max_hop)
+            self.num_node, self.edge, max_hop=max_hop + hop_range)
         self.get_adjacency(strategy)
 
     def __str__(self):
@@ -42,10 +43,26 @@ class Graph():
         if layout == 'openpose':
             self.num_node = 18
             self_link = [(i, i) for i in range(self.num_node)]
+            # neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12,
+            #                                                             11),
+            #                  (10, 9), (9, 8), (11, 1), (8, 1), (5, 1), (2, 1),
+            #                  (0, 1), (15, 0), (14, 0), (17, 15), (16, 14)]
+            # neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12,
+            #                                                             11),
+            #                  (10, 9), (9, 8), (11, 5), (8, 2), (5, 1), (2, 1),
+            #                  (0, 1), (15, 0), (14, 0), (17, 15), (16, 14)]
+            #over connection
             neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12,
                                                                         11),
-                             (10, 9), (9, 8), (11, 5), (8, 2), (5, 1), (2, 1),
-                             (0, 1), (15, 0), (14, 0), (17, 15), (16, 14)]
+                             (10, 9), (9, 8), (11, 1), (8, 1), (5, 1), (2, 1),
+                             (0, 1), (15, 0), (14, 0), (17, 15), (16, 14),
+                             (7, 2), (4, 5), (4, 7), (3, 6), (11, 8), (9, 12), (13, 10), (9, 13), (12, 10)]
+            # neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12,
+            #                                                             11),
+            #                  (10, 9), (9, 8), (11, 5), (8, 2), (5, 1), (2, 1),
+            #                  (0, 1), (15, 0), (14, 0), (17, 15), (16, 14),
+            #                  (7, 2), (4, 5), (4, 7), (3, 6), (11, 8), (9, 12), (13, 10), (9, 13), (12, 10)]
+
             self.edge = self_link + neighbor_link
             self.center = 1
         elif layout == 'ntu-rgb+d':

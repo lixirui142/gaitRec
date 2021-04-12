@@ -41,6 +41,8 @@ args.load_pretrain = False
 args.pretrain = "model/ckpt_149.pth"
 args.class_rate = 1.0
 args.evaluate = False
+args.batch_class_num = 16
+args.class_sample_num = 4
 
 if args.load_pretrain:
     ckpt = torch.load(args.pretrain,map_location=torch.device('cpu'))
