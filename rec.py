@@ -201,9 +201,10 @@ class REC_Processor:
 
 	# self.io = REC_IO()
 
-	def load_model(self, model):
+	def load_model(self, model, pretrain = False):
 		self.model = model
-		self.model.apply(weights_init)
+		if not pretrain:
+			self.model.apply(weights_init)
 		self.loss = nn.CrossEntropyLoss()
 		self.loss3 = nn.CosineEmbeddingLoss()
 		# self.loss4=nn.HingeEmbeddingLoss()

@@ -27,11 +27,11 @@ args.batchSize = 64
 args.lr = 0.01
 args.epoch = 50
 args.rampdown_epoch = 1200
-args.name = "180r"
+args.name = "180-0"
 args.save_dir = "model/" + args.name
 args.result_dir = "result/" + args.name
 # args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]
-args.viewset = ["180"]
+args.viewset = ["000"]
 args.counter_num = 8
 args.pos_num = 8
 args.clip_len = 60
@@ -44,16 +44,12 @@ args.id_list = [i for i in range(62)]
 args.train_len = len(args.id_list)
 args.test_list = [i for i in range(62, 124)]
 args.load_pretrain = True
-args.pretrain = "model/180r/ckpt_best_0.83602.pth"
+args.pretrain = "model/180r/ckpt_best_0.81183.pth"
 args.class_rate = 1.0
 args.evaluate = False
 args.batch_class_num = 8
 args.class_sample_num = 4
 args.save_freq = 10
-
-if args.load_pretrain:
-	ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))
-	model.load_state_dict(ckpt['state_dict'], strict=True)
 
 if not os.path.exists(args.save_dir):
 	os.mkdir(args.save_dir)
@@ -81,8 +77,7 @@ test_loader = DataLoader(dataset=test_set, num_workers=args.threads,
 data_loader = {"train": train_loader, "test": test_loader, "init": init_loader}
 
 proc = REC_Processor(args, data_loader, device)
-proc.load_model(model)
-proc.load_optimizer()
+proc.load_model(model, pretrain=args.pretrain)
 
 # test_set = TestDataset(args)
 # test_indices = [i for i in range(len(test_set))]
