@@ -152,7 +152,8 @@ class Model(nn.Module):
             x, _ = gcn(x, self.A * importance)
 
         # global pooling
-        x = F.max_pool2d(x, x.size()[2:])
+        # x = F.max_pool2d(x, x.size()[2:])
+        x = F.max_pool1d(x.mean(2), x.size()[3])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         return x
 
