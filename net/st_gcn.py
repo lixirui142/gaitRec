@@ -44,13 +44,13 @@ class Model(nn.Module):
         self.st_gcn_networks = nn.ModuleList((
             st_gcn(in_channels, 64, kernel_size, 1, residual=False, **kwargs0),
             st_gcn(64, 64, kernel_size, 1, **kwargs),
-            st_gcn(64, 64, kernel_size, 1, **kwargs),
-            st_gcn(64, 64, kernel_size, 1, **kwargs),
+            # st_gcn(64, 64, kernel_size, 1, **kwargs),
+            # st_gcn(64, 64, kernel_size, 1, **kwargs),
             st_gcn(64, 128, kernel_size, 2, **kwargs),
             st_gcn(128, 128, kernel_size, 1, **kwargs),
-            st_gcn(128, 128, kernel_size, 1, **kwargs),
+            # st_gcn(128, 128, kernel_size, 1, **kwargs),
             st_gcn(128, 256, kernel_size, 2, **kwargs),
-            st_gcn(256, 256, kernel_size, 1, **kwargs),
+            # st_gcn(256, 256, kernel_size, 1, **kwargs),
             st_gcn(256, 256, kernel_size, 1, **kwargs),
         ))
 
@@ -153,7 +153,9 @@ class Model(nn.Module):
 
         # global pooling
         # x = F.max_pool2d(x, x.size()[2:])
-        x = F.max_pool1d(x.mean(2), x.size()[3])
+        # x = F.max_pool1d(x.mean(2), x.size()[3])
+        # x = x.view(N, M, -1 , 1, 1).mean(dim=1)
+        x = F.max_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         return x
 
@@ -252,6 +254,15 @@ class st_gcn(nn.Module):
                     padding=(1, 0)),
                 nn.BatchNorm2d(out_channels),
             )
+            # self.residual = nn.Sequential(
+            #     nn.Conv2d(
+            #         in_channels,
+            #         out_channels,
+            #         kernel_size=1,
+            #         stride=(stride, 1)),
+            #     nn.BatchNorm2d(out_channels),
+            # )
+
 
         self.relu = nn.ReLU(inplace=True)
 

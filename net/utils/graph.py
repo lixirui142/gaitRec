@@ -34,6 +34,8 @@ class Graph():
         self.get_edge(layout)
         self.hop_dis = get_hop_distance(
             self.num_node, self.edge, max_hop=max_hop + hop_range)
+        # self.hop_dis = get_hop_distance(
+        #     self.num_node, self.edge, max_hop=max_hop)
         self.get_adjacency(strategy)
 
     def __str__(self):

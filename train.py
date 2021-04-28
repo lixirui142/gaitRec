@@ -25,11 +25,11 @@ args.batchSize = 64
 args.lr = 0.01
 args.epoch = 50
 args.rampdown_epoch = 1200
-args.name = "180-0"
+args.name = "090rm2"
 args.save_dir = "model/" + args.name
 args.result_dir = "result/" + args.name
 # args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]
-args.viewset = ["000"]
+args.viewset = ["090"]
 args.counter_num = 8
 args.pos_num = 8
 args.clip_len = 60
@@ -42,7 +42,7 @@ args.id_list = [i for i in range(62)]
 args.train_len = len(args.id_list)
 args.test_list = [i for i in range(62, 124)]
 args.load_pretrain = False
-args.pretrain = "model/180r/ckpt_best_0.81183.pth"
+args.pretrain = "model/090rm2/ckpt_best_0.91398.pth"
 args.class_rate = 1.0
 args.evaluate = False
 args.batch_class_num = 8
@@ -74,7 +74,7 @@ test_loader = DataLoader(dataset=test_set, num_workers=args.threads,
 data_loader = {"train": train_loader, "test": test_loader, "init": init_loader}
 
 proc = REC_Processor(args, data_loader, device)
-proc.load_model(model)
+proc.load_model(model, pretrain=args.pretrain)
 proc.load_optimizer()
 
 # test_set = TestDataset(args)
@@ -96,51 +96,53 @@ proc.load_optimizer()
 #         param_group['lr'] = lr
 
 if __name__ == '__main__':
-	proc.standarization()
-	# print("Test: " )
-	# proc.test()
-	loss = []
-	prec = []
-	test_rank1 = [[], [], []]
-	best = 0
-	rank_one, avg = proc.test()
-	for i in range(3):
-		test_rank1[i].append(rank_one[i])
+    proc.standarization()
+    # print("Test: " )
+    # proc.test()
+    loss = []
+    prec = []
+    test_rank1 = [[], [], []]
+    best = 0
+    # rank_one, avg = proc.test()
+    # bestrankone = rank_one
+    # for i in range(3):
+    #     test_rank1[i].append(rank_one[i])
 
-	for epoch in range(args.epoch):
-		print("Epoch %d" % epoch)
-		tloss, tprec = proc.train()
-		loss += tloss
-		prec += tprec
-		print("Test: ")
-		rank_one, avg = proc.test()
-		for i in range(3):
-			test_rank1[i].append(rank_one[i])
-		if avg > best:
-			best = avg
-			if not os.path.exists(args.save_dir):
-				os.makedirs(args.save_dir)
-			model_out_path = "{}/ckpt_best_{:.5f}.pth".format(args.save_dir, best)
-			torch.save({
-				'epoch': epoch + 1,
-				'state_dict': model.state_dict(),
-			}, model_out_path)
+    for epoch in range(args.epoch):
+        print("Epoch %d" % epoch)
+        tloss, tprec = proc.train()
+        loss += tloss
+        prec += tprec
+        print("Test: ")
+        rank_one, avg = proc.test()
+        for i in range(3):
+            test_rank1[i].append(rank_one[i])
+        if avg > best:
+            best = avg
+            bestrankone = rank_one
+            if not os.path.exists(args.save_dir):
+                os.makedirs(args.save_dir)
+            model_out_path = "{}/ckpt_best_{:.5f}.pth".format(args.save_dir, best)
+            torch.save({
+                'epoch': epoch + 1,
+                'state_dict': model.state_dict(),
+            }, model_out_path)
+        print("Max acu: nm {:.5f}, bg {:.5f}, cl {:.5f}".format(bestrankone[0], bestrankone[1], bestrankone[2]))
+        print("Max total: {:.5f}. Max nm: {:.5f}. Max bg: {:.5f}. Max cl: {:.5f}"
+            .format(best, max(test_rank1[0]), max(test_rank1[1]), max(test_rank1[2])))
 
-		if (epoch + 1) % args.save_freq == 0:
-			plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss')
-			plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec')
-			plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'])
-	else:
-		epoch = args.epoch
-		plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss')
-		plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec')
-		plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'])
-		with open(args.save_dir + '/loss.pkl', 'wb') as f:
-			pickle.dump(loss, f)
-		with open(args.save_dir + '/prec.pkl', 'wb') as f:
-			pickle.dump(prec, f)
-		with open(args.save_dir + '/test_rank1.pkl', 'wb') as f:
-			pickle.dump(test_rank1, f)
-
-
-		print("Max acu: {:.5f}".format(best))
+        if (epoch + 1) % args.save_freq == 0:
+            plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
+            plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
+            plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'], args.result_dir)
+    else:
+        epoch = args.epoch
+        plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
+        plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
+        plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'], args.result_dir)
+        with open(args.save_dir + '/loss.pkl', 'wb') as f:
+            pickle.dump(loss, f)
+        with open(args.save_dir + '/prec.pkl', 'wb') as f:
+            pickle.dump(prec, f)
+        with open(args.save_dir + '/test_rank1.pkl', 'wb') as f:
+            pickle.dump(test_rank1, f)

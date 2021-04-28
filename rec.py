@@ -436,51 +436,6 @@ class REC_Processor:
 
 	# print(ere)
 
-	def update_batchnorm(self):
-		self.model.train()
-		# trip=TripletLoss()
-
-		loader = self.data_loader['train']
-		loss_value = []
-		prec_value = []
-		i = 0
-		print_itv = 10
-		trip = TripletLoss()
-		for data, label in loader:
-			if self.mean is None:
-				data = data.squeeze(axis=0).float().to(self.dev)
-			else:
-				data = data.squeeze(axis=0).float()
-				data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
-			label = label.long().to(self.dev)
-
-			# print(label)
-			output = self.model(data)
-			# self.show(output,10)
-			# loss = self.loss(output1, label)
-			loss3, prec = trip.forward(output, label)
-			# print(loss,loss3)
-			loss = loss3
-			self.prec_meter.update(prec)
-			self.loss_meter.update(loss.data.item())
-			# statistics
-			# self.iter_info['loss'] = loss.data.item()
-			# self.iter_info['lr'] = '{:.6f}'.format(self.lr)
-			# loss_value.append(self.iter_info['loss'])
-			# self.show_iter_info()
-			# self.meta_info['iter'] += 1
-			if i % print_itv == (print_itv - 1):  # print every 2000 mini-batches
-				print('[%5d] loss: %.5f.' %
-					  (i + 1, self.loss_meter.avg), 'prec : %.5f.' %
-					  self.prec_meter.avg)
-				loss_value.append(self.loss_meter.avg)
-				prec_value.append(self.prec_meter.avg)
-			i += 1
-		return loss_value, prec_value
-	# self.epoch_info['mean_loss'] = np.mean(loss_value)
-	# self.show_epoch_info()
-	# self.io.print_timer()
-
 	def train(self):
 		self.model.train()
 		self.adjust_lr()
@@ -492,8 +447,9 @@ class REC_Processor:
 		i = 0
 		print_itv = 10
 		trip = TripletLoss()
+		flag = 'mean' in dir(self)
 		for data, label in loader:
-			if self.mean is None:
+			if not flag:
 				data = data.squeeze(axis=0).float().to(self.dev)
 			else:
 				data = data.squeeze(axis=0).float()
@@ -537,8 +493,8 @@ class REC_Processor:
 		temp1 = []
 		temp2 = []
 		temp3 = []
-		temp4 = []
-		temp5 = []
+		# temp4 = []
+		# temp5 = []
 		output3 = output3.data.cpu().numpy()
 		output3 = list(output3)
 		idd = 0
@@ -553,10 +509,10 @@ class REC_Processor:
 				temp2.extend(decompos)
 			if int(idd / step) == 3:
 				temp3.extend(decompos)
-			if int(idd / step) == 4:
-				temp4.extend(decompos)
-			if int(idd / step) == 5:
-				temp5.extend(decompos)
+			# if int(idd / step) == 4:
+			# 	temp4.extend(decompos)
+			# if int(idd / step) == 5:
+			# 	temp5.extend(decompos)
 			idd += 1
 		# print(len(temp))
 
@@ -565,8 +521,8 @@ class REC_Processor:
 		temp111.extend(temp1)
 		temp111.extend(temp2)
 		temp111.extend(temp3)
-		temp111.extend(temp4)
-		temp111.extend(temp5)
+		# temp111.extend(temp4)
+		# temp111.extend(temp5)
 
 		temp111 = np.array(temp111)
 		length = 256
@@ -578,15 +534,15 @@ class REC_Processor:
 		temp1 = np.array(temp1)
 		temp2 = np.array(temp2)
 		temp3 = np.array(temp3)
-		temp4 = np.array(temp4)
-		temp5 = np.array(temp5)
+		# temp4 = np.array(temp4)
+		# temp5 = np.array(temp5)
 
 		temp = temp.reshape(-1, length)
 		temp1 = temp1.reshape(-1, length)
 		temp2 = temp2.reshape(-1, length)
 		temp3 = temp3.reshape(-1, length)
-		temp4 = temp4.reshape(-1, length)
-		temp5 = temp5.reshape(-1, length)
+		# temp4 = temp4.reshape(-1, length)
+		# temp5 = temp5.reshape(-1, length)
 
 		fig = plt.figure()
 		pca = PCA(n_components=3)
@@ -609,11 +565,11 @@ class REC_Processor:
 		X = pca.transform(temp3)
 		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='y')
 
-		X = pca.transform(temp4)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='c')
-
-		X = pca.transform(temp5)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='k')
+		# X = pca.transform(temp4)
+		# ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='c')
+		#
+		# X = pca.transform(temp5)
+		# ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='k')
 		# codebook=center_point[i]
 		# plt.scatter(codebook[:, 0], codebook[:, 1],codebook[:, 2],c='red',marker='o',linewidths=5)
 		plt.show()
@@ -628,9 +584,10 @@ class REC_Processor:
 		gallary_lab = []
 		trip = TripletLoss(prec = 1)
 		loader.dataset.set_mode(0)
+		flag = 'mean' in dir(self)
 		for data, label in loader:
 			# get data
-			if self.mean is None:
+			if not flag:
 				data = data.squeeze(axis=0).float().to(self.dev)
 			else:
 				data = data.squeeze(axis=0).float()
@@ -649,7 +606,7 @@ class REC_Processor:
 			probe_lab = []
 			for data, label in loader:
 				# get data
-				if self.mean is None:
+				if not flag:
 					data = data.squeeze(axis=0).float().to(self.dev)
 				else:
 					data = data.squeeze(axis=0).float()

@@ -98,29 +98,40 @@ class TrainDataset(GaitDataset):
 		cls = index // self.samples_len
 		idx = index % self.samples_len
 		lst = []
-
-		cls_list = [cls]
-		idx_list = [idx]
 		label = []
-		while (len(cls_list) <= self.args.batch_class_num):
-			cls = cls_list[-1]
-			while (len(idx_list) <= self.args.class_sample_num):
-				smpidx = idx_list[-1]
-				smp = self.samples[cls * self.samples_len + smpidx]
+		cls_list = np.random.choice(np.arange(self.train_len), self.args.batch_class_num, replace=False)
+		cls_list[0] = cls
+		assert self.samples_len >= self.args.class_sample_num
+		for c in cls_list:
+			chc = np.random.choice(c * self.samples_len + np.arange(self.samples_len), self.args.class_sample_num, replace=False)
+			label += [c] * self.args.class_sample_num
+			for sp in chc:
+				smp = self.samples[sp]
 				lst.append(smp[0])
 				clip_len = min(clip_len, smp[1])
-				label.append(cls)
 
-				smpidx = random.randint(0, self.samples_len - 1)
-				while (smpidx in idx_list):
-					smpidx = random.randint(0, self.samples_len - 1)
-				idx_list.append(smpidx)
 
-			smpcls = random.randint(0, self.train_len - 1)
-			while (smpcls in cls_list):
-				smpcls = random.randint(0, self.train_len - 1)
-			cls_list.append(smpcls)
-			idx_list = [random.randint(0, self.samples_len - 1)]
+
+
+		# while (len(cls_list) <= self.args.batch_class_num):
+		# 	cls = cls_list[-1]
+		# 	while (len(idx_list) <= self.args.class_sample_num):
+		# 		smpidx = idx_list[-1]
+		# 		smp = self.samples[cls * self.samples_len + smpidx]
+		# 		lst.append(smp[0])
+		# 		clip_len = min(clip_len, smp[1])
+		# 		label.append(cls)
+		#
+		# 		smpidx = random.randint(0, self.samples_len - 1)
+		# 		while (smpidx in idx_list):
+		# 			smpidx = random.randint(0, self.samples_len - 1)
+		# 		idx_list.append(smpidx)
+		#
+		# 	smpcls = random.randint(0, self.train_len - 1)
+		# 	while (smpcls in cls_list):
+		# 		smpcls = random.randint(0, self.train_len - 1)
+		# 	cls_list.append(smpcls)
+		# 	idx_list = [random.randint(0, self.samples_len - 1)]
 
 		label = torch.tensor(label)
 
