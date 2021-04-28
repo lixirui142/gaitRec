@@ -236,7 +236,7 @@ class REC_Processor:
 			#     param_group['lr'] = lr
 			self.lr = lr
 		else:
-			self.lr = self.arg.base_lr
+			self.optimizer.defaults["lr"] = self.arg.base_lr
 
 	def show_topk(self, k):
 		self.result[:, 0:train_num + 1] = 0

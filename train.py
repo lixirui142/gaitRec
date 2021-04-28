@@ -8,6 +8,7 @@ from data import TrainDataset, TestDataset, rec_collate, InitDataset
 from utils import plot, plotmulti
 from rec import REC_Processor
 import pickle
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 graph_args = {"layout": 'openpose', "strategy": 'spatial', "max_hop": 1, "dilation": 1}
 model = Model(3, graph_args, True, device)
@@ -60,7 +61,8 @@ if not os.path.exists(args.result_dir):
 
 init_set = InitDataset(args)
 
-init_loader = DataLoader(dataset=init_set, num_workers=args.threads, batch_size=args.batch_class_num * args.class_sample_num, shuffle=True, collate_fn=rec_collate)
+init_loader = DataLoader(dataset=init_set, num_workers=args.threads,
+						 batch_size=args.batch_class_num * args.class_sample_num, shuffle=True, collate_fn=rec_collate)
 
 train_set = TrainDataset(args)
 
@@ -96,53 +98,58 @@ proc.load_optimizer()
 #         param_group['lr'] = lr
 
 if __name__ == '__main__':
-    proc.standarization()
-    # print("Test: " )
-    # proc.test()
-    loss = []
-    prec = []
-    test_rank1 = [[], [], []]
-    best = 0
-    # rank_one, avg = proc.test()
-    # bestrankone = rank_one
-    # for i in range(3):
-    #     test_rank1[i].append(rank_one[i])
+	proc.standarization()
+	# print("Test: " )
+	# proc.test()
+	loss = []
+	prec = []
+	test_rank1 = [[], [], []]
+	best = 0
+	rank_one, avg = proc.test()
+	bestrankone = rank_one
+	for i in range(3):
+		test_rank1[i].append(rank_one[i])
 
-    for epoch in range(args.epoch):
-        print("Epoch %d" % epoch)
-        tloss, tprec = proc.train()
-        loss += tloss
-        prec += tprec
-        print("Test: ")
-        rank_one, avg = proc.test()
-        for i in range(3):
-            test_rank1[i].append(rank_one[i])
-        if avg > best:
-            best = avg
-            bestrankone = rank_one
-            if not os.path.exists(args.save_dir):
-                os.makedirs(args.save_dir)
-            model_out_path = "{}/ckpt_best_{:.5f}.pth".format(args.save_dir, best)
-            torch.save({
-                'epoch': epoch + 1,
-                'state_dict': model.state_dict(),
-            }, model_out_path)
-        print("Max acu: nm {:.5f}, bg {:.5f}, cl {:.5f}".format(bestrankone[0], bestrankone[1], bestrankone[2]))
-        print("Max total: {:.5f}. Max nm: {:.5f}. Max bg: {:.5f}. Max cl: {:.5f}"
-            .format(best, max(test_rank1[0]), max(test_rank1[1]), max(test_rank1[2])))
+	for epoch in range(args.epoch):
+		if epoch == 5:
+			proc.adjust_lr()
+			print("adjust learning rate")
+		print("Epoch %d" % epoch)
+		tloss, tprec = proc.train()
+		loss += tloss
+		prec += tprec
+		print("Test: ")
+		rank_one, avg = proc.test()
+		for i in range(3):
+			test_rank1[i].append(rank_one[i])
+		if avg > best:
+			best = avg
+			bestrankone = rank_one
+			if not os.path.exists(args.save_dir):
+				os.makedirs(args.save_dir)
+			model_out_path = "{}/ckpt_best_{:.5f}.pth".format(args.save_dir, best)
+			torch.save({
+				'epoch': epoch + 1,
+				'state_dict': model.state_dict(),
+			}, model_out_path)
+		print("Max acu: nm {:.5f}, bg {:.5f}, cl {:.5f}".format(bestrankone[0], bestrankone[1], bestrankone[2]))
+		print("Max total: {:.5f}. Max nm: {:.5f}. Max bg: {:.5f}. Max cl: {:.5f}"
+			  .format(best, max(test_rank1[0]), max(test_rank1[1]), max(test_rank1[2])))
 
-        if (epoch + 1) % args.save_freq == 0:
-            plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
-            plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
-            plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'], args.result_dir)
-    else:
-        epoch = args.epoch
-        plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
-        plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
-        plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'], args.result_dir)
-        with open(args.save_dir + '/loss.pkl', 'wb') as f:
-            pickle.dump(loss, f)
-        with open(args.save_dir + '/prec.pkl', 'wb') as f:
-            pickle.dump(prec, f)
-        with open(args.save_dir + '/test_rank1.pkl', 'wb') as f:
-            pickle.dump(test_rank1, f)
+		if (epoch + 1) % args.save_freq == 0:
+			plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
+			plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
+			plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'],
+					  args.result_dir)
+	else:
+		epoch = args.epoch
+		plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
+		plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
+		plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'],
+				  args.result_dir)
+		with open(args.save_dir + '/loss.pkl', 'wb') as f:
+			pickle.dump(loss, f)
+		with open(args.save_dir + '/prec.pkl', 'wb') as f:
+			pickle.dump(prec, f)
+		with open(args.save_dir + '/test_rank1.pkl', 'wb') as f:
+			pickle.dump(test_rank1, f)
