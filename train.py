@@ -24,7 +24,7 @@ args.data_dir = "G:/program/github/gait-gcn/data/prime-joints/"
 args.threads = 1
 args.batchSize = 64
 args.lr = 0.01
-args.epoch = 50
+args.epoch = 200
 args.rampdown_epoch = 1200
 args.name = "090rm2"
 args.save_dir = "model/" + args.name
@@ -99,16 +99,17 @@ proc.load_optimizer()
 
 if __name__ == '__main__':
 	proc.standarization()
+	proc.adjust_lr()
 	# print("Test: " )
 	# proc.test()
 	loss = []
 	prec = []
 	test_rank1 = [[], [], []]
 	best = 0
-	rank_one, avg = proc.test()
-	bestrankone = rank_one
-	for i in range(3):
-		test_rank1[i].append(rank_one[i])
+	# rank_one, avg = proc.test()
+	# bestrankone = rank_one
+	# for i in range(3):
+	# 	test_rank1[i].append(rank_one[i])
 
 	for epoch in range(args.epoch):
 		if epoch == 5:

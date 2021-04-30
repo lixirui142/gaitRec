@@ -80,7 +80,6 @@ class InitDataset(GaitDataset):
 
 		return x, label
 
-
 class TrainDataset(GaitDataset):
 	def __init__(self, args):
 		super(TrainDataset, self).__init__(args)
@@ -95,8 +94,7 @@ class TrainDataset(GaitDataset):
 		# label = int(x.split('-')[-4][-3:]) - 1
 		# x = get_content(x, clip_len)
 		clip_len = min(self.samples[index][1], self.args.clip_len)
-		cls = index // self.samples_len
-		idx = index % self.samples_len
+		cls = index
 		lst = []
 		label = []
 		cls_list = np.random.choice(np.arange(self.train_len), self.args.batch_class_num, replace=False)
@@ -143,7 +141,73 @@ class TrainDataset(GaitDataset):
 		return data, label
 
 	def __len__(self):
-		return len(self.samples)
+		return self.train_len
+
+
+
+# class TrainDataset(GaitDataset):
+# 	def __init__(self, args):
+# 		super(TrainDataset, self).__init__(args)
+# 		self.train_len = len(self.args.id_list)
+# 		for identity in self.args.id_list:
+# 			for idx in self.args.sample_list:
+# 				self.samples.append(self.res[identity][idx])
+#
+# 	def __getitem__(self, index):
+# 		# x = self.samples[index][0]
+# 		# clip_len = min(self.samples[index][1], self.args.clip_len)
+# 		# label = int(x.split('-')[-4][-3:]) - 1
+# 		# x = get_content(x, clip_len)
+# 		clip_len = min(self.samples[index][1], self.args.clip_len)
+# 		cls = index // self.samples_len
+# 		idx = index % self.samples_len
+# 		lst = []
+# 		label = []
+# 		cls_list = np.random.choice(np.arange(self.train_len), self.args.batch_class_num, replace=False)
+# 		cls_list[0] = cls
+# 		assert self.samples_len >= self.args.class_sample_num
+# 		for c in cls_list:
+# 			chc = np.random.choice(c * self.samples_len + np.arange(self.samples_len), self.args.class_sample_num, replace=False)
+# 			label += [c] * self.args.class_sample_num
+# 			for sp in chc:
+# 				smp = self.samples[sp]
+# 				lst.append(smp[0])
+# 				clip_len = min(clip_len, smp[1])
+#
+#
+#
+#
+# 		# while (len(cls_list) <= self.args.batch_class_num):
+# 		# 	cls = cls_list[-1]
+# 		# 	while (len(idx_list) <= self.args.class_sample_num):
+# 		# 		smpidx = idx_list[-1]
+# 		# 		smp = self.samples[cls * self.samples_len + smpidx]
+# 		# 		lst.append(smp[0])
+# 		# 		clip_len = min(clip_len, smp[1])
+# 		# 		label.append(cls)
+# 		#
+# 		# 		smpidx = random.randint(0, self.samples_len - 1)
+# 		# 		while (smpidx in idx_list):
+# 		# 			smpidx = random.randint(0, self.samples_len - 1)
+# 		# 		idx_list.append(smpidx)
+# 		#
+# 		# 	smpcls = random.randint(0, self.train_len - 1)
+# 		# 	while (smpcls in cls_list):
+# 		# 		smpcls = random.randint(0, self.train_len - 1)
+# 		# 	cls_list.append(smpcls)
+# 		# 	idx_list = [random.randint(0, self.samples_len - 1)]
+#
+# 		label = torch.tensor(label)
+#
+# 		data = []
+# 		for f in lst:
+# 			data.append(get_content(f, clip_len))
+# 		data = torch.stack(data, dim=0)
+#
+# 		return data, label
+#
+# 	def __len__(self):
+# 		return len(self.samples)
 
 
 class TestDataset(GaitDataset):
