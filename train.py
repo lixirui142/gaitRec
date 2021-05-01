@@ -8,6 +8,7 @@ from data import TrainDataset, TestDataset, rec_collate, InitDataset
 from utils import plot, plotmulti
 from rec import REC_Processor
 import pickle
+import numpy as np
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 graph_args = {"layout": 'openpose', "strategy": 'spatial', "max_hop": 1, "dilation": 1}
@@ -25,7 +26,9 @@ args.threads = 1
 args.batchSize = 64
 args.lr = 0.01
 args.epoch = 200
-args.rampdown_epoch = 1200
+args.rampdown_epoch = 200
+args.decay_alpha = 0.0001
+args.decay_rate = -np.log(0.001)
 args.name = "090rm2"
 args.save_dir = "model/" + args.name
 args.result_dir = "result/" + args.name
@@ -87,34 +90,38 @@ proc.load_optimizer()
 # optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr)
 # criterion = nn.MSELoss()
 
+# def cosine_decay(global_step):
+# 	global_step = min(global_step, args.rampdown_epoch)
+# 	cosine_decay = 0.5 * (1 + np.cos(np.pi * global_step / args.rampdown_epoch))
+# 	decayed = (1 - args.decay_alpha) * cosine_decay + args.decay_alpha
+# 	decayed_learning_rate = args.lr * decayed
+# 	return decayed_learning_rate
+def natural_decay(step):
+	decayed_learning_rate = args.lr * np.exp(-args.decay_rate * step / args.rampdown_epoch)
+	return decayed_learning_rate
+
+
 # def cosine_rampdown(current, rampdown_length):
 #     assert 0 <= current <= rampdown_length
 #     return max(0., float(.5 * (np.cos(np.pi * current / rampdown_length) + 1)))
-#
+
 # def adjust_learning_rate(current):
 #     lr = args.lr
 #     lr *= cosine_rampdown(current, args.rampdown_epoch)
-#     for param_group in optimizer.param_groups:
-#         param_group['lr'] = lr
-
+#     return lr
 if __name__ == '__main__':
 	proc.standarization()
-	proc.adjust_lr()
-	# print("Test: " )
-	# proc.test()
 	loss = []
 	prec = []
 	test_rank1 = [[], [], []]
 	best = 0
-	# rank_one, avg = proc.test()
-	# bestrankone = rank_one
-	# for i in range(3):
-	# 	test_rank1[i].append(rank_one[i])
+	rank_one, avg = proc.test()
+	bestrankone = rank_one
+	for i in range(3):
+		test_rank1[i].append(rank_one[i])
 
 	for epoch in range(args.epoch):
-		if epoch == 5:
-			proc.adjust_lr()
-			print("adjust learning rate")
+		proc.adjust_lr(natural_decay(epoch))
 		print("Epoch %d" % epoch)
 		tloss, tprec = proc.train()
 		loss += tloss

@@ -229,14 +229,14 @@ class REC_Processor:
 		else:
 			raise ValueError()
 
-	def adjust_lr(self):
+	def adjust_lr(self, lr):
 		if self.arg.optimizer == 'SGD' and self.arg.step:
 			lr = self.arg.base_lr * (0.1 ** np.sum(self.meta_info['epoch'] >= np.array(self.arg.step)))
 			# for param_group in self.optimizer.param_groups:
 			#     param_group['lr'] = lr
 			self.lr = lr
 		else:
-			self.optimizer.defaults["lr"] = self.arg.base_lr
+			self.optimizer.defaults["lr"] = lr
 
 	def show_topk(self, k):
 		self.result[:, 0:train_num + 1] = 0
