@@ -438,7 +438,7 @@ class REC_Processor:
 
 	def train(self):
 		self.model.train()
-		self.adjust_lr()
+		# self.adjust_lr()
 		# trip=TripletLoss()
 
 		loader = self.data_loader['train']
