@@ -54,6 +54,7 @@ args.class_sample_num = 4
 args.save_freq = 10
 args.alpha = 1.0
 args.center_lr = 1.0
+args.center_startep = 25
 
 if args.load_pretrain:
 	ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))

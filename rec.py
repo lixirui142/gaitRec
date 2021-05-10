@@ -102,7 +102,7 @@ class TripletLoss(nn.Module):
 		srt = dist.argsort(dim=1)
 		rank_one = mask.gather(dim=1, index=srt[:, 0].unsqueeze(dim=1)).sum() * 1. / y.size(0)
 
-		rank_all = (dist_an.data > dist_ap.data).sum() * 1. / y.size(0)
+		#rank_all = (dist_an.data > dist_ap.data).sum() * 1. / y.size(0)
 		# return rank_one, rank_all
 		return rank_one
 
@@ -249,7 +249,10 @@ class REC_Processor:
 
 
 	def adjust_alpha(self, alpha, epoch):
-		self.alpha = self.cosine_decay(alpha, epoch)
+		if epoch >= self.arg.center_startep:
+			self.with_center_loss = True
+		else:
+			self.with_center_loss = False
 
 	def show_topk(self, k):
 		self.result[:, 0:train_num + 1] = 0
@@ -459,6 +462,7 @@ class REC_Processor:
 		prec_value = []
 		i = 0
 		print_itv = 10
+		alpha = self.arg.alpha
 		trip = TripletLoss()
 		flag = 'mean' in dir(self)
 		for data, label in loader:
@@ -474,15 +478,19 @@ class REC_Processor:
 			# self.show(output,10)
 			# loss = self.loss(output1, label)
 			loss3, prec = trip.forward(output, label)
-			c_loss = self.center_loss.forward(output, label)
+			if self.with_center_loss:
+				c_loss = self.center_loss.forward(output, label)
 			# print(loss,loss3)
-			loss = loss3 + self.alpha * c_loss
+			else:
+				c_output = output.detach()
+				c_loss = self.center_loss.forward(c_output, label)
+
+			loss = loss3 + alpha * c_loss
 
 			# backward
 			self.optimizer.zero_grad()
 			self.center_optimizer.zero_grad()
-			loss.backward(retain_graph=True)
-
+			loss.backward()
 			self.optimizer.step()
 			self.center_optimizer.step()
 			self.prec_meter.update(prec)
