@@ -26,9 +26,9 @@ args.threads = 1
 args.batchSize = 64
 args.lr = 0.01
 args.epoch = 200
-args.rampdown_epoch = 200
+args.rampdown_epoch = 50
 args.decay_alpha = 0.0001
-args.decay_rate = -np.log(0.001)
+args.decay_rate = -np.log(0.01)
 args.name = "090rm2"
 args.save_dir = "model/" + args.name
 args.result_dir = "result/" + args.name
@@ -52,6 +52,8 @@ args.evaluate = False
 args.batch_class_num = 8
 args.class_sample_num = 4
 args.save_freq = 10
+args.alpha = 1.0
+args.center_lr = 1.0
 
 if args.load_pretrain:
 	ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))
@@ -122,7 +124,7 @@ if __name__ == '__main__':
 
 
 	for epoch in range(args.epoch):
-		proc.adjust_lr(natural_decay(epoch))
+		proc.adjust_alpha(args.alpha, epoch)
 		print("Epoch %d" % epoch)
 		tloss, tprec = proc.train()
 		loss += tloss

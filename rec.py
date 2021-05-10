@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # pylint: disable=W0201
-import sys
 import argparse
-import yaml
 import numpy as np
 
 # torch
@@ -12,15 +10,13 @@ import torch.optim as optim
 
 from utils import AverageMeter
 
-from torch.utils.data import DataLoader
-
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy import stats
 from mpl_toolkits.mplot3d import Axes3D
 import pickle
 import os
+from center_loss import CenterLoss
+
 # train set
 train_num = 62
 
@@ -198,6 +194,7 @@ class REC_Processor:
 		self.dev = device
 		self.prec_meter = AverageMeter()
 		self.loss_meter = AverageMeter()
+		self.center_loss = CenterLoss(num_classes=args.train_len, feat_dim=256, use_gpu=True)
 
 	# self.io = REC_IO()
 
@@ -229,6 +226,11 @@ class REC_Processor:
 		else:
 			raise ValueError()
 
+		self.center_optimizer = optim.SGD(
+			self.center_loss.parameters(),
+			lr = self.arg.center_lr)
+
+
 	def adjust_lr(self, lr):
 		if self.arg.optimizer == 'SGD' and self.arg.step:
 			lr = self.arg.base_lr * (0.1 ** np.sum(self.meta_info['epoch'] >= np.array(self.arg.step)))
@@ -237,6 +239,17 @@ class REC_Processor:
 			self.lr = lr
 		else:
 			self.optimizer.defaults["lr"] = lr
+
+	def cosine_decay(self, alpha, epoch, decay_alpha = 0):
+		global_step = max(self.arg.rampdown_epoch - epoch, 0)
+		cosine_decay = 0.5 * (1 + np.cos(np.pi * global_step / self.arg.rampdown_epoch))
+		decayed = (1 - decay_alpha) * cosine_decay + decay_alpha
+		decayed_alpha = alpha * decayed
+		return decayed_alpha
+
+
+	def adjust_alpha(self, alpha, epoch):
+		self.alpha = self.cosine_decay(alpha, epoch)
 
 	def show_topk(self, k):
 		self.result[:, 0:train_num + 1] = 0
@@ -461,13 +474,17 @@ class REC_Processor:
 			# self.show(output,10)
 			# loss = self.loss(output1, label)
 			loss3, prec = trip.forward(output, label)
+			c_loss = self.center_loss.forward(output, label)
 			# print(loss,loss3)
-			loss = loss3
+			loss = loss3 + self.alpha * c_loss
 
 			# backward
 			self.optimizer.zero_grad()
+			self.center_optimizer.zero_grad()
 			loss.backward(retain_graph=True)
+
 			self.optimizer.step()
+			self.center_optimizer.step()
 			self.prec_meter.update(prec)
 			self.loss_meter.update(loss.data.item())
 			# statistics
