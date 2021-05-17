@@ -248,8 +248,8 @@ class REC_Processor:
 		return decayed_alpha
 
 
-	def adjust_alpha(self, alpha, epoch):
-		if epoch >= self.arg.center_startep:
+	def adjust_alpha(self, alpha, epoch, enable_center):
+		if epoch >= self.arg.center_startep and enable_center:
 			self.with_center_loss = True
 		else:
 			self.with_center_loss = False

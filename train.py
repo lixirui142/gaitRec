@@ -55,6 +55,7 @@ args.save_freq = 10
 args.alpha = 1.0
 args.center_lr = 1.0
 args.center_startep = 25
+args.enable_center = False
 
 if args.load_pretrain:
 	ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))
@@ -125,7 +126,7 @@ if __name__ == '__main__':
 
 
 	for epoch in range(args.epoch):
-		proc.adjust_alpha(args.alpha, epoch)
+		proc.adjust_alpha(args.alpha, epoch, args.enable_center)
 		print("Epoch %d" % epoch)
 		tloss, tprec = proc.train()
 		loss += tloss

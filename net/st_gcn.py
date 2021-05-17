@@ -44,13 +44,13 @@ class Model(nn.Module):
         self.st_gcn_networks = nn.ModuleList((
             st_gcn(in_channels, 64, kernel_size, 1, residual=False, **kwargs0),
             st_gcn(64, 64, kernel_size, 1, **kwargs),
-            # st_gcn(64, 64, kernel_size, 1, **kwargs),
-            # st_gcn(64, 64, kernel_size, 1, **kwargs),
+            st_gcn(64, 64, kernel_size, 1, **kwargs),
+            st_gcn(64, 64, kernel_size, 1, **kwargs),
             st_gcn(64, 128, kernel_size, 2, **kwargs),
             st_gcn(128, 128, kernel_size, 1, **kwargs),
-            # st_gcn(128, 128, kernel_size, 1, **kwargs),
+            st_gcn(128, 128, kernel_size, 1, **kwargs),
             st_gcn(128, 256, kernel_size, 2, **kwargs),
-            # st_gcn(256, 256, kernel_size, 1, **kwargs),
+            st_gcn(256, 256, kernel_size, 1, **kwargs),
             st_gcn(256, 256, kernel_size, 1, **kwargs),
         ))
 
@@ -157,6 +157,7 @@ class Model(nn.Module):
         # x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         x = F.max_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
+        x /= torch.norm(x, dim=1, keepdim=True)
         return x
 
     def extract_feature(self, x):
