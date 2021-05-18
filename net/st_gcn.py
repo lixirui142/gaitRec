@@ -157,7 +157,7 @@ class Model(nn.Module):
         # x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         x = F.max_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
-        x /= torch.norm(x, dim=1, keepdim=True)
+        x = x / torch.norm(x, dim=1, keepdim=True)
         return x
 
     def extract_feature(self, x):
