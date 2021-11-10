@@ -1,7 +1,10 @@
-*__pycache__
 __pycache__
-*/__pycache__
 .idea/
 model/
 result/
 recognition.py
+data
+dvs
+.*
+openpose
+script

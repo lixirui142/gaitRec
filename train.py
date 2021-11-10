@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from data import TrainDataset, TestDataset, rec_collate, InitDataset
-from utils import plot, plotmulti
+from utils import plot, plotmulti, ExponentialLR
 from rec import REC_Processor
 import pickle
 import numpy as np
@@ -26,9 +26,8 @@ args.threads = 1
 args.batchSize = 64
 args.lr = 0.01
 args.epoch = 200
-args.rampdown_epoch = 50
-args.decay_alpha = 0.0001
-args.decay_rate = -np.log(0.01)
+args.gamma = 0.01
+args.decay_epoch = args.epoch
 args.name = "090rm2"
 args.save_dir = "model/" + args.name
 args.result_dir = "result/" + args.name
@@ -114,7 +113,7 @@ def natural_decay(step):
 #     lr *= cosine_rampdown(current, args.rampdown_epoch)
 #     return lr
 if __name__ == '__main__':
-	proc.standarization()
+	#proc.standarization()
 	loss = []
 	prec = []
 	test_rank1 = [[], [], []]
@@ -126,7 +125,7 @@ if __name__ == '__main__':
 
 
 	for epoch in range(args.epoch):
-		proc.adjust_alpha(args.alpha, epoch, args.enable_center)
+		#proc.adjust_alpha(args.alpha, epoch, args.enable_center)
 		print("Epoch %d" % epoch)
 		tloss, tprec = proc.train()
 		loss += tloss

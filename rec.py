@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from utils import AverageMeter
+from utils import AverageMeter, ExponentialLR
 
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
@@ -225,6 +225,7 @@ class REC_Processor:
 				weight_decay=self.arg.weight_decay)
 		else:
 			raise ValueError()
+		self.scheduler = ExponentialLR(optimizer=self.optimizer, decay_epochs=self.arg.decay_epoch, gamma= self.arg.gamma)
 
 		self.center_optimizer = optim.SGD(
 			self.center_loss.parameters(),
@@ -232,13 +233,7 @@ class REC_Processor:
 
 
 	def adjust_lr(self, lr):
-		if self.arg.optimizer == 'SGD' and self.arg.step:
-			lr = self.arg.base_lr * (0.1 ** np.sum(self.meta_info['epoch'] >= np.array(self.arg.step)))
-			# for param_group in self.optimizer.param_groups:
-			#     param_group['lr'] = lr
-			self.lr = lr
-		else:
-			self.optimizer.defaults["lr"] = lr
+		self.scheduler.step()
 
 	def cosine_decay(self, alpha, epoch, decay_alpha = 0):
 		global_step = max(self.arg.rampdown_epoch - epoch, 0)

@@ -27,7 +27,7 @@ class Model(nn.Module):
     """
 
     def __init__(self, in_channels, graph_args,
-                 edge_importance_weighting, device, **kwargs):
+                 edge_importance_weighting, device, norm = False, **kwargs):
         super().__init__()
 
         # load graph
@@ -69,7 +69,7 @@ class Model(nn.Module):
         self.clsavg = torch.rand((70, 256 , 1, 1),device=device, requires_grad=False)
         self.clscnt = [1 for i in range(70)]
         self.alpha = 0.9
-
+        self.norm = norm 
     # def update_classavg(self, features, clas):
     #     for feature,cls in zip(features,clas):
     #         loss = (71 / 70) * F.mse_loss(feature, self.clsavg[cls].clone())
@@ -157,7 +157,8 @@ class Model(nn.Module):
         # x = x.view(N, M, -1 , 1, 1).mean(dim=1)
         x = F.max_pool2d(x, x.size()[2:])
         x = x.view(N, M, -1 , 1, 1).mean(dim=1)
-        x = x / torch.norm(x, dim=1, keepdim=True)
+        if self.norm:
+            x = x / torch.norm(x, dim=1, keepdim=True)
         return x
 
     def extract_feature(self, x):

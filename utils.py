@@ -64,6 +64,16 @@ def plotmulti(data, name, epoch, xlabel, ylabel, label, plt_dir):
     # plt.clf()  # Clear figure
     plt.close(fig)
 
+class ExponentialLR(torch.optim.lr_scheduler._LRScheduler):
+
+    def __init__(self, optimizer, decay_epochs, gamma=0.1, last_epoch=-1):
+        self.decay_epochs = decay_epochs
+        self.gamma = gamma
+        super(ExponentialLR, self).__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        return [base_lr * self.gamma ** (self.last_epoch / self.decay_epochs)
+                for base_lr in self.base_lrs]
 
 
 

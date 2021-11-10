@@ -135,7 +135,7 @@ class TrainDataset(GaitDataset):
 
 		data = []
 		for f in lst:
-			data.append(get_content(f, clip_len))
+			data.append(get_content(f, 60))
 		data = torch.stack(data, dim=0)
 
 		return data, label
