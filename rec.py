@@ -232,7 +232,7 @@ class REC_Processor:
 			lr = self.arg.center_lr)
 
 
-	def adjust_lr(self, lr):
+	def adjust_lr(self):
 		self.scheduler.step()
 
 	def cosine_decay(self, alpha, epoch, decay_alpha = 0):

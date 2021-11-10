@@ -128,6 +128,7 @@ if __name__ == '__main__':
 		#proc.adjust_alpha(args.alpha, epoch, args.enable_center)
 		print("Epoch %d" % epoch)
 		tloss, tprec = proc.train()
+		proc.adjust_lr()
 		loss += tloss
 		prec += tprec
 		print("Test: ")
