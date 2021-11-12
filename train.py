@@ -21,17 +21,17 @@ def main():
 	parser = REC_Processor.get_parser()
 	args = parser.parse_args()
 
-	args.data_dir = "G:/program/github/gait-gcn/data/prime-joints/"
-	# args.data_dir="G:/xuke/CASIA-B/prime-joints/"
+	# args.data_dir = "G:/program/github/gait-gcn/data/prime-joints/"
+	args.data_dir="G:/xuke/CASIA-B/prime-joints/"
 	# args.data_dir="C:/Users/admn/Desktop/gait prp/gait-gcn/data/prime-joints/"
 
 	args.threads = 1
 	args.batchSize = 64
-	args.lr = 0.01
+	args.lr = 0.1
 	args.epoch = 200
-	args.gamma = 0.1
+	args.gamma = 0.01
 	args.decay_epoch = args.epoch
-	args.name = "090rm2"
+	args.name = "090stable"
 	args.save_dir = "model/" + args.name
 	args.result_dir = "result/" + args.name
 	# args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]
@@ -58,9 +58,9 @@ def main():
 	args.center_lr = 1.0
 	args.center_startep = 25
 	args.enable_center = False
-	args.wamdb = True
+	args.wandb = True
 
-	if wandb:
+	if args.wandb:
 		wandb.init(entity="lixirui142", project="gaitRec",name=args.name)
 		wandb.config.update(args)
 
@@ -130,7 +130,8 @@ def main():
 	best = avg
 	for i in range(3):
 		test_rank1[i].append(rank_one[i])
-	wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
+	if args.wandb:
+		wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
 
 	for epoch in range(args.epoch):
 		#proc.adjust_alpha(args.alpha, epoch, args.enable_center)
@@ -143,7 +144,8 @@ def main():
 		rank_one, avg = proc.test()
 		for i in range(3):
 			test_rank1[i].append(rank_one[i])
-		wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
+		if args.wandb:
+			wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
 		if avg > best:
 			best = avg
 			bestrankone = rank_one
