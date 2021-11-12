@@ -1,3 +1,4 @@
+from torch.nn.functional import dropout
 from net.st_gcn import Model
 import os
 import torch
@@ -9,10 +10,11 @@ from utils import plot, plotmulti, ExponentialLR
 from rec import REC_Processor
 import pickle
 import numpy as np
+import wandb
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 graph_args = {"layout": 'openpose', "strategy": 'spatial', "max_hop": 1, "dilation": 1}
-model = Model(3, graph_args, True, device)
+model = Model(3, graph_args, True, device, dropout = 0.3)
 model = model.to(device)
 
 parser = REC_Processor.get_parser()
@@ -26,7 +28,7 @@ args.threads = 1
 args.batchSize = 64
 args.lr = 0.01
 args.epoch = 200
-args.gamma = 0.01
+args.gamma = 0.1
 args.decay_epoch = args.epoch
 args.name = "090rm2"
 args.save_dir = "model/" + args.name
@@ -49,12 +51,17 @@ args.pretrain = "model/090rm2/ckpt_best_0.91398.pth"
 args.class_rate = 1.0
 args.evaluate = False
 args.batch_class_num = 8
-args.class_sample_num = 4
+args.class_sample_num = 8
 args.save_freq = 10
 args.alpha = 0.0
 args.center_lr = 1.0
 args.center_startep = 25
 args.enable_center = False
+args.wamdb = True
+
+if wandb:
+	wandb.init(entity="lixirui142", project="gaitRec",name=args.name)
+	wandb.config.update(args)
 
 if args.load_pretrain:
 	ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))
@@ -120,9 +127,10 @@ if __name__ == '__main__':
 	best = 0
 	rank_one, avg = proc.test()
 	bestrankone = rank_one
+	best = avg
 	for i in range(3):
 		test_rank1[i].append(rank_one[i])
-
+	wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
 
 	for epoch in range(args.epoch):
 		#proc.adjust_alpha(args.alpha, epoch, args.enable_center)
@@ -135,6 +143,7 @@ if __name__ == '__main__':
 		rank_one, avg = proc.test()
 		for i in range(3):
 			test_rank1[i].append(rank_one[i])
+		wandb.log({"NM": rank_one[0], "BG": rank_one[1], "CL": rank_one[2], "AVG": avg})
 		if avg > best:
 			best = avg
 			bestrankone = rank_one
@@ -149,17 +158,24 @@ if __name__ == '__main__':
 		print("Max total: {:.5f}. Max nm: {:.5f}. Max bg: {:.5f}. Max cl: {:.5f}"
 			  .format(best, max(test_rank1[0]), max(test_rank1[1]), max(test_rank1[2])))
 
-		if (epoch + 1) % args.save_freq == 0:
+		if not args.wandb and (epoch + 1) % args.save_freq == 0:
 			plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
 			plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
 			plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'],
 					  args.result_dir)
 	else:
 		epoch = args.epoch
-		plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
-		plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
-		plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'],
-				  args.result_dir)
+		if not args.wandb:
+			plot(loss, 'loss', epoch, 'Every 10 Batch', 'Running Loss', args.result_dir)
+			plot(prec, 'prec', epoch, 'Every 10 Batch', 'Running Prec', args.result_dir)
+			plotmulti(test_rank1, 'rank1prec', epoch, 'Every epoch', 'Test Rank 1 Precision', ['nm', 'bg', 'cl'],
+					args.result_dir)
+		else:
+			wandb.config.best_avg = best
+			wandb.config.best_nm = bestrankone[0]
+			wandb.config.best_bg = bestrankone[1]
+			wandb.config.best_cl = bestrankone[2]
+
 		with open(args.save_dir + '/loss.pkl', 'wb') as f:
 			pickle.dump(loss, f)
 		with open(args.save_dir + '/prec.pkl', 'wb') as f:
