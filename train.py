@@ -27,15 +27,15 @@ def main():
 
 	args.threads = 1
 	args.batchSize = 64
-	args.lr = 0.1
-	args.epoch = 200
+	args.lr = 0.01
+	args.epoch = 400
 	args.gamma = 0.01
 	args.decay_epoch = args.epoch
-	args.name = "090stable"
+	args.name = "All"
 	args.save_dir = "model/" + args.name
 	args.result_dir = "result/" + args.name
-	# args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]
-	args.viewset = ["090"]
+	args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]
+	# args.viewset = ["090"]
 	args.counter_num = 8
 	args.pos_num = 8
 	args.clip_len = 60
