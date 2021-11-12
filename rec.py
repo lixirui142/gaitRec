@@ -195,7 +195,7 @@ class REC_Processor:
 		self.prec_meter = AverageMeter()
 		self.loss_meter = AverageMeter()
 		self.center_loss = CenterLoss(num_classes=args.train_len, feat_dim=256, use_gpu=True)
-
+		self.with_center_loss = False
 	# self.io = REC_IO()
 
 	def load_model(self, model, pretrain = False):
