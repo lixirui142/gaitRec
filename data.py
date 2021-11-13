@@ -40,13 +40,18 @@ def get_content(filedir, clip_len):
 	res = []
 	for root, dirs, files in os.walk(filedir, followlinks=True):
 		files.sort(key=lambda x: x.split('_')[1])
-		for i in range(clip_len):
+		i = 0
+		while(len(res) < clip_len):
 			if i < len(files):
 				f = open(os.path.join(root, files[i]), 'r')
 				str = f.read()
-				res.append(json.loads(str)['people'][0]['pose_keypoints_2d'])
+				js_data = json.loads(str)
+				people = js_data['people']
+				if len(people) > 0 and 'pose_keypoints_2d' in people[0]:
+					res.append(people[0]['pose_keypoints_2d'])
 			else:
 				res.append([0.0 for i in range(len(res[-1]))])
+			i += 1
 	x = torch.tensor(res)
 	x = x.view(len(res), -1, 3, 1)
 	x = x.permute(2, 0, 1, 3).contiguous()

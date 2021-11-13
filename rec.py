@@ -596,7 +596,7 @@ class REC_Processor:
 
 	# print(ere)
 
-	def test(self, evaluation=True):
+	def test(self, evaluation=True, only_nm = False):
 
 		self.model.eval()
 		loader = self.data_loader['test']
@@ -620,7 +620,11 @@ class REC_Processor:
 		gallary_feat = torch.cat(gallary_feat)
 		gallary_lab = torch.cat(gallary_lab).long()
 		rank_one = []
-		for i in range(1,4):
+		if only_nm:
+			mxr = 2
+		else:
+			mxr = 4
+		for i in range(1,mxr):
 			loader.dataset.set_mode(i)
 			probe_feat = []
 			probe_lab = []
@@ -640,11 +644,15 @@ class REC_Processor:
 			probe_lab = torch.cat(probe_lab).long()
 			with torch.no_grad():
 				rank_one.append(trip.test(gallary_feat, gallary_lab, probe_feat, probe_lab))
-
-		avg = sum(rank_one) / 3
-		print("Test Resut: nm: {:.5f}. bg: {:.5f}. cl: {:.5f}. Total: {:.5f}".format(rank_one[0], rank_one[1], rank_one[2], avg))
-
-		return rank_one, avg
+		if only_nm:
+			rank_one += [0, 0]
+			avg = sum(rank_one) / 1
+			print("Test Result: nm: {:.5f}.".format(rank_one[0]))
+			return rank_one, avg
+		else:
+			avg = sum(rank_one) / 3
+			print("Test Resut: nm: {:.5f}. bg: {:.5f}. cl: {:.5f}. Total: {:.5f}".format(rank_one[0], rank_one[1], rank_one[2], avg))
+			return rank_one, avg
 
 	@staticmethod
 	def get_parser(add_help=False):
