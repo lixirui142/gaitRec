@@ -10,7 +10,7 @@ import re
 from torch._six import container_abcs, string_classes, int_classes
 
 
-def get_files(mydir, viewset):
+def get_files(mydir, viewset, viewlen = 10):
 	f = open("len.json", "r")
 	lendic = json.load(f)
 
@@ -22,13 +22,16 @@ def get_files(mydir, viewset):
 		for f in dirs:
 			t = f.split('-')
 			if t[0] != previous:
-				while (len(m) < 10 * len(viewset)):
+				while (len(m) < viewlen * len(viewset)):
 					m.append(m[-1])
 				res.append(m)
 				m = []
 				previous = t[0]
 			if t[-1] in viewset:
-				m.append([os.path.join(root, f), lendic[f]])
+				if f in lendic:
+					m.append([os.path.join(root, f), lendic[f]])
+				else:
+					m.append([os.path.join(root, f), 100])
 		res.append(m)
 		break
 	# print (len(res),len(res[0]))
@@ -43,14 +46,16 @@ def get_content(filedir, clip_len):
 		i = 0
 		while(len(res) < clip_len):
 			if i < len(files):
-				f = open(os.path.join(root, files[i]), 'r')
-				str = f.read()
+				with open(os.path.join(root, files[i]), 'r') as f:
+					str = f.read()
 				js_data = json.loads(str)
 				people = js_data['people']
 				if len(people) > 0 and 'pose_keypoints_2d' in people[0]:
 					res.append(people[0]['pose_keypoints_2d'])
+				else:
+					res.append([0.0 for i in range(18 * 3)])
 			else:
-				res.append([0.0 for i in range(len(res[-1]))])
+				res.append([0.0 for i in range(18 * 3)])
 			i += 1
 	x = torch.tensor(res)
 	x = x.view(len(res), -1, 3, 1)
@@ -61,7 +66,7 @@ def get_content(filedir, clip_len):
 class GaitDataset(torch.utils.data.Dataset):
 	def __init__(self, args):
 		self.args = args
-		self.res = get_files(self.args.data_dir, viewset=self.args.viewset)
+		self.res = get_files(self.args.data_dir, viewset=self.args.viewset, viewlen = args.viewlen)
 		self.samples_len = len(self.args.sample_list)
 		self.samples = []
 
