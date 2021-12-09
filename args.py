@@ -51,6 +51,6 @@ def get_args(null_args = False):
     args.center_startep = 25
     args.enable_center = False
     args.wandb = True
-    args.only_nm = True
+    args.only_nm = False
 
     return args
