@@ -53,9 +53,9 @@ def get_content(filedir, clip_len):
 				if len(people) > 0 and 'pose_keypoints_2d' in people[0]:
 					res.append(people[0]['pose_keypoints_2d'])
 				else:
-					res.append([0.0 for i in range(18 * 3)])
+					res.append([0.0 for i in range(15 * 3)])
 			else:
-				res.append([0.0 for i in range(18 * 3)])
+				res.append([0.0 for i in range(15 * 3)])
 			i += 1
 	x = torch.tensor(res)
 	x = x.view(len(res), -1, 3, 1)

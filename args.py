@@ -10,7 +10,7 @@ def get_args(null_args = False):
 
     #args.data_dir = "G:\program\github\gaitRec\data\gait_prime_joints_process"
     # args.data_dir="G:/xuke/CASIA-B/prime-joints/"
-    args.data_dir = "G:/lxr/gaitRec/data/prime_joints/"
+    args.data_dir = "G:/lxr/gaitRec/data/gait_prime_joints_process/"
     # args.data_dir="C:/Users/admn/Desktop/gait prp/gait-gcn/data/prime-joints/"
     ## 001-bg-01-000
     args.threads = 1

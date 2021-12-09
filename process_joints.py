@@ -3,8 +3,8 @@ import json
 from matplotlib.pyplot import bone
 import torch
 
-data_dir = "G:\program\github\gaitRec\data\gait_prime_joints"
-ndir = "G:\program\github\gaitRec\data\gait_prime_joints_process"
+data_dir = "data\gait_prime_joints"
+ndir = "data\gait_prime_joints_process"
 
 for root, dirs, files in os.walk(data_dir):
     if len(files) > 0:
