@@ -43,7 +43,7 @@ class Graph():
 
     def get_edge(self, layout):
         if layout == 'openpose':
-            self.num_node = 18
+            self.num_node = 14
             self_link = [(i, i) for i in range(self.num_node)]
             # neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12,
             #                                                             11),
