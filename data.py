@@ -140,12 +140,12 @@ class TrainDataset(GaitDataset):
 		# 		smpcls = random.randint(0, self.train_len - 1)
 		# 	cls_list.append(smpcls)
 		# 	idx_list = [random.randint(0, self.samples_len - 1)]
-
+		clip_len = self.args.clip_len
 		label = torch.tensor(label)
 
 		data = []
 		for f in lst:
-			data.append(get_content(f, 60))
+			data.append(get_content(f, clip_len))
 		data = torch.stack(data, dim=0)
 
 		return data, label
@@ -254,8 +254,8 @@ class TestDataset(GaitDataset):
 
 	def __getitem__(self, index):
 		x = self.samples[index][0]
-		clip_len = min(self.samples[index][1], self.args.clip_len)
-		# clip_len = 60
+		#clip_len = min(self.samples[index][1], self.args.clip_len)
+		clip_len = self.args.clip_len
 		label = int(x.split('-')[-4][-3:]) - 1
 		x = get_content(x, clip_len)
 

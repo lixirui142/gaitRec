@@ -17,8 +17,8 @@ from args import get_args
 def main():
 	args = get_args()
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-	graph_args = {"layout": 'openpose', "strategy": 'spatial', "max_hop": 1, "dilation": 1}
-	model = Model(3, graph_args, True, device, dropout = 0.3)
+	graph_args = {"layout": 'openpose', "strategy": 'uniform', "max_hop": 1, "dilation": 1}
+	model = Model(3, graph_args, True, device)
 	model = model.to(device)
 
 	# parser = REC_Processor.get_parser()
