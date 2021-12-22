@@ -90,6 +90,12 @@ def main():
 				'epoch': epoch + 1,
 				'state_dict': model.state_dict(),
 			}, model_out_path)
+			model_best_path = "{}/ckpt_best.pth".format(args.save_dir)
+			torch.save({
+				'epoch': epoch + 1,
+				'state_dict': model.state_dict(),
+			}, model_best_path)
+
 		print("Max acu: nm {:.5f}, bg {:.5f}, cl {:.5f}".format(bestrankone[0], bestrankone[1], bestrankone[2]))
 		print("Max total: {:.5f}. Max nm: {:.5f}. Max bg: {:.5f}. Max cl: {:.5f}"
 			  .format(best, max(test_rank1[0]), max(test_rank1[1]), max(test_rank1[2])))
