@@ -247,23 +247,23 @@ class st_gcn(nn.Module):
             self.residual = lambda x: x
 
         else:
-            # self.residual = nn.Sequential(
-            #     nn.Conv2d(
-            #         in_channels,
-            #         out_channels,
-            #         kernel_size=(3, 1),
-            #         stride=(stride, 1),
-            #         padding=(1, 0)),
-            #     nn.BatchNorm2d(out_channels),
-            # )
             self.residual = nn.Sequential(
                 nn.Conv2d(
                     in_channels,
                     out_channels,
-                    kernel_size=1,
-                    stride=(stride, 1)),
+                    kernel_size=(3, 1),
+                    stride=(stride, 1),
+                    padding=(1, 0)),
                 nn.BatchNorm2d(out_channels),
             )
+            # self.residual = nn.Sequential(
+            #     nn.Conv2d(
+            #         in_channels,
+            #         out_channels,
+            #         kernel_size=1,
+            #         stride=(stride, 1)),
+            #     nn.BatchNorm2d(out_channels),
+            # )
 
 
         self.relu = nn.ReLU(inplace=True)

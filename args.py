@@ -8,9 +8,9 @@ def get_args(null_args = False):
     else:
         args = parser.parse_args()
 
-    args.data_dir = "G:\program\github\gaitRec\data\gait_prime_joints_process"
+    #args.data_dir = "G:\program\github\gaitRec\data\gait_prime_joints_process"
     # args.data_dir="G:/xuke/CASIA-B/prime-joints/"
-    #args.data_dir = "G:/lxr/gaitRec/data/gait_prime_joints_process/"
+    args.data_dir = "G:/lxr/gaitRec/data/gait_prime_joints_process/"
     # args.data_dir="C:/Users/admn/Desktop/gait prp/gait-gcn/data/prime-joints/"
     args.threads = 1
     args.batchSize = 64
@@ -32,8 +32,8 @@ def get_args(null_args = False):
     args.id_list = [i for i in range(13)]
     args.train_len = len(args.id_list)
     args.test_list = [i for i in range(13)]
-    args.load_pretrain = False
-    args.pretrain = "model/090rm2/ckpt_best_0.91398.pth"
+    args.load_pretrain = True
+    args.pretrain = "model/test_cb_p_maxmin/ckpt_best.pth"
     args.evaluate = False
     args.batch_class_num = 8
     args.class_sample_num = 4
@@ -42,7 +42,7 @@ def get_args(null_args = False):
     args.center_lr = 1.0
     args.center_startep = 25
     args.enable_center = False
-    args.wandb = False
+    args.wandb = True
     args.only_nm = False
     args.joint_len = 14
     return args
