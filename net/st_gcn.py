@@ -86,7 +86,7 @@ class Model(nn.Module):
         # x = torch.cat((y,x),dim = 1)
         # x = torch.sigmoid(self.fcn(x))
         # x = x.view(x.size(0),-1)
-        return x.squeeze()
+        return x
 
         # batchnum = x.size(0)
         #

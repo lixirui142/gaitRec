@@ -26,8 +26,10 @@ def main():
 		wandb.config.update(args)
 
 	if args.load_pretrain:
+		print("Loading Pretrain...")
 		ckpt = torch.load(args.pretrain, map_location=torch.device('cpu'))
 		model.load_state_dict(ckpt['state_dict'], strict=True)
+		print("Successfully Loaded.")
 
 	if not os.path.exists(args.save_dir):
 		os.mkdir(args.save_dir)

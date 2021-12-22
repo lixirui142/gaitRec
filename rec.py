@@ -200,6 +200,7 @@ class REC_Processor:
 	def load_model(self, model, pretrain = False):
 		self.model = model
 		if not pretrain:
+			print("Initialing Weight")
 			self.model.apply(weights_init)
 
 	def load_optimizer(self):
