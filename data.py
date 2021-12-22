@@ -34,12 +34,10 @@ def get_files(mydir, viewset, viewlen = 10):
 					m.append([os.path.join(root, f), 100])
 		res.append(m)
 		break
-	# print (len(res),len(res[0]))
-	# print (res[0])
 	return res
 
 
-def get_content(filedir, clip_len):
+def get_content(filedir, clip_len, joint_len = 14):
 	res = []
 	for root, dirs, files in os.walk(filedir, followlinks=True):
 		files.sort(key=lambda x: x.split('_')[1])
@@ -53,9 +51,9 @@ def get_content(filedir, clip_len):
 				if len(people) > 0 and 'pose_keypoints_2d' in people[0]:
 					res.append(people[0]['pose_keypoints_2d'])
 				else:
-					res.append([0.0 for i in range(14 * 3)])
+					res.append([0.0 for i in range(joint_len * 3)])
 			else:
-				res.append([0.0 for i in range(14 * 3)])
+				res.append([0.0 for i in range(joint_len * 3)])
 			i += 1
 	x = torch.tensor(res)
 	x = x.view(len(res), -1, 3, 1)
@@ -73,22 +71,6 @@ class GaitDataset(torch.utils.data.Dataset):
 	def __len__(self):
 		return len(self.samples)
 
-class InitDataset(GaitDataset):
-	def __init__(self, args):
-		super(InitDataset, self).__init__(args)
-		self.train_len = len(self.args.id_list)
-		for identity in self.args.id_list:
-			for idx in self.args.sample_list:
-				self.samples.append(self.res[identity][idx])
-
-	def __getitem__(self, index):
-		x = self.samples[index][0]
-		clip_len = min(self.samples[index][1], self.args.clip_len)
-		# clip_len = 60
-		label = int(x.split('-')[-4][-3:]) - 1
-		x = get_content(x, clip_len)
-
-		return x, label
 
 class TrainDataset(GaitDataset):
 	def __init__(self, args):
@@ -99,10 +81,6 @@ class TrainDataset(GaitDataset):
 				self.samples.append(self.res[identity][idx])
 
 	def __getitem__(self, index):
-		# x = self.samples[index][0]
-		# clip_len = min(self.samples[index][1], self.args.clip_len)
-		# label = int(x.split('-')[-4][-3:]) - 1
-		# x = get_content(x, clip_len)
 		clip_len = min(self.samples[index][1], self.args.clip_len)
 		cls = index
 		lst = []
@@ -118,106 +96,18 @@ class TrainDataset(GaitDataset):
 				lst.append(smp[0])
 				clip_len = min(clip_len, smp[1])
 
-
-
-
-		# while (len(cls_list) <= self.args.batch_class_num):
-		# 	cls = cls_list[-1]
-		# 	while (len(idx_list) <= self.args.class_sample_num):
-		# 		smpidx = idx_list[-1]
-		# 		smp = self.samples[cls * self.samples_len + smpidx]
-		# 		lst.append(smp[0])
-		# 		clip_len = min(clip_len, smp[1])
-		# 		label.append(cls)
-		#
-		# 		smpidx = random.randint(0, self.samples_len - 1)
-		# 		while (smpidx in idx_list):
-		# 			smpidx = random.randint(0, self.samples_len - 1)
-		# 		idx_list.append(smpidx)
-		#
-		# 	smpcls = random.randint(0, self.train_len - 1)
-		# 	while (smpcls in cls_list):
-		# 		smpcls = random.randint(0, self.train_len - 1)
-		# 	cls_list.append(smpcls)
-		# 	idx_list = [random.randint(0, self.samples_len - 1)]
 		clip_len = self.args.clip_len
 		label = torch.tensor(label)
 
 		data = []
 		for f in lst:
-			data.append(get_content(f, clip_len))
+			data.append(get_content(f, clip_len, self.args.joint_len))
 		data = torch.stack(data, dim=0)
 
 		return data, label
 
 	def __len__(self):
 		return self.train_len
-
-
-
-# class TrainDataset(GaitDataset):
-# 	def __init__(self, args):
-# 		super(TrainDataset, self).__init__(args)
-# 		self.train_len = len(self.args.id_list)
-# 		for identity in self.args.id_list:
-# 			for idx in self.args.sample_list:
-# 				self.samples.append(self.res[identity][idx])
-#
-# 	def __getitem__(self, index):
-# 		# x = self.samples[index][0]
-# 		# clip_len = min(self.samples[index][1], self.args.clip_len)
-# 		# label = int(x.split('-')[-4][-3:]) - 1
-# 		# x = get_content(x, clip_len)
-# 		clip_len = min(self.samples[index][1], self.args.clip_len)
-# 		cls = index // self.samples_len
-# 		idx = index % self.samples_len
-# 		lst = []
-# 		label = []
-# 		cls_list = np.random.choice(np.arange(self.train_len), self.args.batch_class_num, replace=False)
-# 		cls_list[0] = cls
-# 		assert self.samples_len >= self.args.class_sample_num
-# 		for c in cls_list:
-# 			chc = np.random.choice(c * self.samples_len + np.arange(self.samples_len), self.args.class_sample_num, replace=False)
-# 			label += [c] * self.args.class_sample_num
-# 			for sp in chc:
-# 				smp = self.samples[sp]
-# 				lst.append(smp[0])
-# 				clip_len = min(clip_len, smp[1])
-#
-#
-#
-#
-# 		# while (len(cls_list) <= self.args.batch_class_num):
-# 		# 	cls = cls_list[-1]
-# 		# 	while (len(idx_list) <= self.args.class_sample_num):
-# 		# 		smpidx = idx_list[-1]
-# 		# 		smp = self.samples[cls * self.samples_len + smpidx]
-# 		# 		lst.append(smp[0])
-# 		# 		clip_len = min(clip_len, smp[1])
-# 		# 		label.append(cls)
-# 		#
-# 		# 		smpidx = random.randint(0, self.samples_len - 1)
-# 		# 		while (smpidx in idx_list):
-# 		# 			smpidx = random.randint(0, self.samples_len - 1)
-# 		# 		idx_list.append(smpidx)
-# 		#
-# 		# 	smpcls = random.randint(0, self.train_len - 1)
-# 		# 	while (smpcls in cls_list):
-# 		# 		smpcls = random.randint(0, self.train_len - 1)
-# 		# 	cls_list.append(smpcls)
-# 		# 	idx_list = [random.randint(0, self.samples_len - 1)]
-#
-# 		label = torch.tensor(label)
-#
-# 		data = []
-# 		for f in lst:
-# 			data.append(get_content(f, clip_len))
-# 		data = torch.stack(data, dim=0)
-#
-# 		return data, label
-#
-# 	def __len__(self):
-# 		return len(self.samples)
 
 
 class TestDataset(GaitDataset):
@@ -257,49 +147,13 @@ class TestDataset(GaitDataset):
 		#clip_len = min(self.samples[index][1], self.args.clip_len)
 		clip_len = self.args.clip_len
 		label = int(x.split('-')[-4][-3:]) - 1
-		x = get_content(x, clip_len)
+		x = get_content(x, clip_len, self.args.joint_len)
 
 		return x, label
 
-	# clip_len = min(self.samples[index][1], self.args.clip_len)
-	# cls = index // self.samples_len
-	# idx = index % self.samples_len
-	# lst = []
-	#
-	# cls_list = [cls]
-	# idx_list = [idx]
-	# label = []
-	# while (len(cls_list) <= self.args.batch_class_num):
-	# 	cls = cls_list[-1]
-	# 	while (len(idx_list) <= self.args.class_sample_num):
-	# 		smpidx = idx_list[-1]
-	# 		smp = self.samples[cls * self.samples_len + smpidx]
-	# 		lst.append(smp[0])
-	# 		clip_len = min(clip_len, smp[1])
-	# 		label.append(cls + self.train_len)
-	#
-	# 		smpidx = random.randint(0, self.samples_len - 1)
-	# 		while (smpidx in idx_list):
-	# 			smpidx = random.randint(0, self.samples_len - 1)
-	# 		idx_list.append(smpidx)
-	#
-	# 	smpcls = random.randint(0, self.train_len - 1)
-	# 	while (smpcls in cls_list):
-	# 		smpcls = random.randint(0, self.train_len - 1)
-	# 	cls_list.append(smpcls)
-	# 	idx_list = [random.randint(0, self.samples_len - 1)]
-	#
-	# label = torch.tensor(label)
-	#
-	# data = []
-	# for f in lst:
-	# 	data.append(get_content(f, clip_len))
-	# data = torch.stack(data, dim=0)
-	#
-	# return data, label
-
 	def __len__(self):
 		return len(self.samples)
+
 
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 default_collate_err_msg_format = (
@@ -409,3 +263,68 @@ def rec_collate(batch):
 # 	"Collect data into fixed-length chunks or blocks"
 # 	args = [iter(iterable)] * n
 # 	return zip(*args)
+
+
+# class TrainDataset(GaitDataset):
+# 	def __init__(self, args):
+# 		super(TrainDataset, self).__init__(args)
+# 		self.train_len = len(self.args.id_list)
+# 		for identity in self.args.id_list:
+# 			for idx in self.args.sample_list:
+# 				self.samples.append(self.res[identity][idx])
+#
+# 	def __getitem__(self, index):
+# 		# x = self.samples[index][0]
+# 		# clip_len = min(self.samples[index][1], self.args.clip_len)
+# 		# label = int(x.split('-')[-4][-3:]) - 1
+# 		# x = get_content(x, clip_len)
+# 		clip_len = min(self.samples[index][1], self.args.clip_len)
+# 		cls = index // self.samples_len
+# 		idx = index % self.samples_len
+# 		lst = []
+# 		label = []
+# 		cls_list = np.random.choice(np.arange(self.train_len), self.args.batch_class_num, replace=False)
+# 		cls_list[0] = cls
+# 		assert self.samples_len >= self.args.class_sample_num
+# 		for c in cls_list:
+# 			chc = np.random.choice(c * self.samples_len + np.arange(self.samples_len), self.args.class_sample_num, replace=False)
+# 			label += [c] * self.args.class_sample_num
+# 			for sp in chc:
+# 				smp = self.samples[sp]
+# 				lst.append(smp[0])
+# 				clip_len = min(clip_len, smp[1])
+#
+#
+#
+#
+# 		# while (len(cls_list) <= self.args.batch_class_num):
+# 		# 	cls = cls_list[-1]
+# 		# 	while (len(idx_list) <= self.args.class_sample_num):
+# 		# 		smpidx = idx_list[-1]
+# 		# 		smp = self.samples[cls * self.samples_len + smpidx]
+# 		# 		lst.append(smp[0])
+# 		# 		clip_len = min(clip_len, smp[1])
+# 		# 		label.append(cls)
+# 		#
+# 		# 		smpidx = random.randint(0, self.samples_len - 1)
+# 		# 		while (smpidx in idx_list):
+# 		# 			smpidx = random.randint(0, self.samples_len - 1)
+# 		# 		idx_list.append(smpidx)
+# 		#
+# 		# 	smpcls = random.randint(0, self.train_len - 1)
+# 		# 	while (smpcls in cls_list):
+# 		# 		smpcls = random.randint(0, self.train_len - 1)
+# 		# 	cls_list.append(smpcls)
+# 		# 	idx_list = [random.randint(0, self.samples_len - 1)]
+#
+# 		label = torch.tensor(label)
+#
+# 		data = []
+# 		for f in lst:
+# 			data.append(get_content(f, clip_len))
+# 		data = torch.stack(data, dim=0)
+#
+# 		return data, label
+#
+# 	def __len__(self):
+# 		return len(self.samples)

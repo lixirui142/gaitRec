@@ -2,12 +2,20 @@ import os
 import json
 from matplotlib.pyplot import bone
 import torch
+import argparse
 
-data_dir = "data\gait_prime_joints"
-ndir = "data\gait_prime_joints_process"
+parser = argparse.ArgumentParser()
+
+parser.add_argument('--joints_dir', default="data\gait_prime_joints", help="Directory for raw joints.")
+parser.add_argument('--result_dir', default="data\gait_prime_joints_process", help='Directory for processed joints')
+
+args = parser.parse_args()
+
+data_dir = args.joints_dir
+ndir = args.result_dir
 
 for root, dirs, files in os.walk(data_dir):
-    if len(files) > 0:
+    if len(files) > 0 and files[0].split('.')[-1] == 'json':
         files.sort(key=lambda x: x.split('_')[1])
         joints = []
         for file in files:

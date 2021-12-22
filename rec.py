@@ -195,20 +195,12 @@ class REC_Processor:
 		self.prec_meter = AverageMeter()
 		self.loss_meter = AverageMeter()
 		self.center_loss = CenterLoss(num_classes=args.train_len, feat_dim=256, use_gpu=True)
-		self.with_center_loss = False
-	# self.io = REC_IO()
+		self.with_center_loss = args.enable_center
 
 	def load_model(self, model, pretrain = False):
 		self.model = model
 		if not pretrain:
 			self.model.apply(weights_init)
-		self.loss = nn.CrossEntropyLoss()
-		self.loss3 = nn.CosineEmbeddingLoss()
-		# self.loss4=nn.HingeEmbeddingLoss()
-		self.loss5 = nn.TripletMarginLoss(margin=1.0, p=2)
-		self.loss6 = nn.BCEWithLogitsLoss()
-		self.soft = nn.Softmax(dim=1)
-		self.trip = TripletLoss()
 
 	def load_optimizer(self):
 		if self.arg.optimizer == 'SGD':
@@ -226,37 +218,27 @@ class REC_Processor:
 		else:
 			raise ValueError()
 		self.scheduler = ExponentialLR(optimizer=self.optimizer, decay_epochs=self.arg.decay_epoch, gamma= self.arg.gamma)
-
-		self.center_optimizer = optim.SGD(
-			self.center_loss.parameters(),
-			lr = self.arg.center_lr)
+		if self.with_center_loss:
+			self.center_optimizer = optim.SGD(
+				self.center_loss.parameters(),
+				lr = self.arg.center_lr)
 
 
 	def adjust_lr(self):
 		self.scheduler.step()
 
-	def cosine_decay(self, alpha, epoch, decay_alpha = 0):
-		global_step = max(self.arg.rampdown_epoch - epoch, 0)
-		cosine_decay = 0.5 * (1 + np.cos(np.pi * global_step / self.arg.rampdown_epoch))
-		decayed = (1 - decay_alpha) * cosine_decay + decay_alpha
-		decayed_alpha = alpha * decayed
-		return decayed_alpha
+	# def cosine_decay(self, alpha, epoch, decay_alpha = 0):
+	# 	global_step = max(self.arg.rampdown_epoch - epoch, 0)
+	# 	cosine_decay = 0.5 * (1 + np.cos(np.pi * global_step / self.arg.rampdown_epoch))
+	# 	decayed = (1 - decay_alpha) * cosine_decay + decay_alpha
+	# 	decayed_alpha = alpha * decayed
+	# 	return decayed_alpha
 
-
-	def adjust_alpha(self, alpha, epoch, enable_center):
-		if epoch >= self.arg.center_startep and enable_center:
-			self.with_center_loss = True
-		else:
-			self.with_center_loss = False
-
-	def show_topk(self, k):
-		self.result[:, 0:train_num + 1] = 0
-		rank = self.result.argsort()
-		# for i, l in enumerate(self.label):
-		#    print(l,rank[i, -1:])
-		hit_top_k = [l in rank[i, -k:] for i, l in enumerate(self.label)]
-		accuracy = sum(hit_top_k) * 1.0 / len(hit_top_k)
-		self.io.print_log('\tTop{}: {:.2f}%'.format(k, 100 * accuracy))
+	# def adjust_alpha(self, alpha, epoch, enable_center):
+	# 	if epoch >= self.arg.center_startep and enable_center:
+	# 		self.with_center_loss = True
+	# 	else:
+	# 		self.with_center_loss = False
 
 	def standarization(self):
 		if os.path.exists(self.arg.save_dir + '/mean.pkl'):
@@ -286,172 +268,8 @@ class REC_Processor:
 		with open(self.arg.save_dir + '/std.pkl', 'wb') as f:
 			pickle.dump(self.std, f)
 
-
-
-
-
-	def extract2(self, data, label):
-
-		# xf=data[:,:,0:50,:,:]
-		# xb=data[:,:,50:100,:,:]
-
-		# bat=xf.size(0)
-		# bat1=xf.size()
-		# xf = xf.reshape(bat, -1)
-		# mean = xf.mean(dim=1).reshape(bat,-1)
-		# std = xf.std(dim=1, unbiased=False).reshape(bat,-1)
-		# xf = (xf - mean)/(std+1e-5)
-		# xf=xf.reshape(bat1)
-
-		# bat=xb.size(0)
-		# bat1=xb.size()
-		# xb = xb.reshape(bat, -1)
-		# mean = xb.mean(dim=1).reshape(bat,-1)
-		# std = xb.std(dim=1, unbiased=False).reshape(bat,-1)
-		# xb = (xb - mean)/(std+1e-5)
-		# xb=xb.reshape(bat1)
-
-		# data=torch.cat((xf,xb),1)
-		# 100,3,100,18,1
-
-		data = data.contiguous().view(data.size(0), -1)
-		# label = label.contiguous().view(label.size(0), -1)
-
-		a = data[label.gt(0)]
-		label = label * -1 + 1
-		b = data[label.gt(0)]
-
-		data = data.data.cpu().numpy()
-		a = a.data.cpu().numpy()
-		b = b.data.cpu().numpy()
-
-		print(data.shape)
-
-		fig = plt.figure()
-		pca = PCA(n_components=3)
-		pca.fit(data)
-		# print pca.explained_variance_ratio_
-		# print pca.explained_variance_
-		ax = Axes3D(fig, rect=[0, 0, 1, 1], elev=30, azim=20)
-		X = pca.transform(a)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], marker='*', c='red', s=40)
-		# ax.scatter(X[:, 0],X[:, 1].reshape(1.-1),X[:, 2].reshape(1.-1), marker='*',c='red',s=30)
-		X = pca.transform(b)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='g')
-		plt.show()
-
-	# print(ere)
-
-	def extract(self, xf, xb):
-		# print(data.size())
-		# print(data[0,:,0,1,0])
-		# #print(ere)0
-		# xf=data[:,:,0:50,:,:]
-		# xb=data[:,:,50:100,:,:]
-
-		# #xf=data
-		xf = xf.contiguous().view(xf.size(0), -1)
-		xb = xb.contiguous().view(xb.size(0), -1)
-		# bat=xf.size(0)
-		# bat1=xf.size()
-		# xf = xf.reshape(bat, -1)
-		# mean = xf.mean(dim=1).reshape(bat,-1)
-		# std = xf.std(dim=1, unbiased=False).reshape(bat,-1)
-		# xf = (xf - mean)/(std+1e-5)
-		# xf=xf.reshape(bat1)
-
-		# print(xf,xb)
-		# print(ere)
-		# print(ere)
-		# print(xf[:,:6],xb[:,:6])
-
-		# mean = xf.mean(dim=0)
-		# std = xf.std(dim=0, unbiased=False)
-		# print(mean,std)
-		# xf = (xf - mean)/(std+1e-5)
-
-		xf = xf.data.cpu().numpy()
-		# xf=xf.astype(np.float)
-		# print(ere)
-		kk = 10
-		temp = xf[0:1 * kk, :]
-		print(temp)
-		# temp=np.vstack((temp,recon_y1[0:1*kk,:]))
-		temp1 = xf[1 * kk:2 * kk, :]
-		# print(temp1)
-		# temp1=np.vstack((temp1,recon_y1[1*kk:2*kk,:]))
-		temp2 = xf[2 * kk:3 * kk, :]
-		# print(temp2)
-		# temp2=np.vstack((temp2,recon_y1[2*kk:3*kk,:]))
-		temp3 = xf[3 * kk:4 * kk, :]
-		# print(temp3)
-		# temp3=np.vstack((temp3,recon_y1[3*kk:4*kk,:]))
-		temp4 = xf[4 * kk:5 * kk, :]
-		print(temp4)
-		# temp4=np.vstack((temp4,recon_y1[4*kk:5*kk,:]))
-		temp5 = xf[5 * kk:6 * kk, :]
-		# print(temp5)
-		temp6 = xf[6 * kk:7 * kk, :]
-		# temp5=np.vstack((temp5,recon_y1[5*kk:6*kk,:]))
-		# print(temp4,temp5)
-
-		temp111 = temp
-		temp111 = np.vstack((temp111, temp1))
-		temp111 = np.vstack((temp111, temp2))
-		temp111 = np.vstack((temp111, temp3))
-		temp111 = np.vstack((temp111, temp4))
-		temp111 = np.vstack((temp111, temp5))
-		temp111 = np.vstack((temp111, temp6))
-		print(temp111.shape)
-
-		fig = plt.figure()
-		pca = PCA(n_components=3)
-		pca.fit(temp111)
-		# print pca.explained_variance_ratio_
-		# print pca.explained_variance_
-		ax = Axes3D(fig, rect=[0, 0, 1, 1], elev=30, azim=20)
-
-		X = pca.transform(temp)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], marker='*', c='red', s=40)
-		# ax.scatter(X[:, 0],X[:, 1].reshape(1.-1),X[:, 2].reshape(1.-1), marker='*',c='red',s=30)
-
-		X = pca.transform(temp1)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='g')
-
-		X = pca.transform(temp2)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='b')
-
-		X = pca.transform(temp3)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='y')
-
-		X = pca.transform(temp4)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='c')
-
-		X = pca.transform(temp5)
-		# print(X)
-		ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='k')
-
-		# X = pca.transform(temp6)
-		# #print(X)
-		# ax.scatter(X[:, 0],X[:, 1],X[:, 2],s=40, marker='*',c='m')
-		# codebook=center_point[i]
-		# plt.scatter(codebook[:, 0], codebook[:, 1],codebook[:, 2],c='red',marker='o',linewidths=5)
-		plt.show()
-
-	# print(ere)
-
 	def train(self):
 		self.model.train()
-		# self.adjust_lr()
-		# trip=TripletLoss()
-
 		loader = self.data_loader['train']
 		loss_value = []
 		prec_value = []
@@ -467,35 +285,28 @@ class REC_Processor:
 				data = data.squeeze(axis=0).float()
 				data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
 			label = label.long().to(self.dev)
-
-			# print(label)
 			output = self.model(data)
 			# self.show(output,10)
-			# loss = self.loss(output1, label)
 			loss3, prec = trip.forward(output, label)
 			if self.with_center_loss:
 				c_loss = self.center_loss.forward(output, label)
-			# print(loss,loss3)
 			else:
-				c_output = output.detach()
-				c_loss = self.center_loss.forward(c_output, label)
+				# c_output = output.detach()
+				# c_loss = self.center_loss.forward(c_output, label)
+				c_loss = 0
 
 			loss = loss3 + alpha * c_loss
 
-			# backward
 			self.optimizer.zero_grad()
-			self.center_optimizer.zero_grad()
+			if self.with_center_loss:
+				self.center_optimizer.zero_grad()
 			loss.backward()
 			self.optimizer.step()
-			self.center_optimizer.step()
+			if self.with_center_loss:
+				self.center_optimizer.step()
 			self.prec_meter.update(prec)
 			self.loss_meter.update(loss.data.item())
-			# statistics
-			# self.iter_info['loss'] = loss.data.item()
-			# self.iter_info['lr'] = '{:.6f}'.format(self.lr)
-			# loss_value.append(self.iter_info['loss'])
-			# self.show_iter_info()
-			# self.meta_info['iter'] += 1
+
 			if i % print_itv == (print_itv - 1):  # print every 2000 mini-batches
 				print('[%5d] loss: %.5f.' %
 					  (i + 1, self.loss_meter.avg), 'prec : %.5f.' %
@@ -507,6 +318,64 @@ class REC_Processor:
 	# self.epoch_info['mean_loss'] = np.mean(loss_value)
 	# self.show_epoch_info()
 	# self.io.print_timer()
+
+	def test(self, evaluation=True, only_nm = False):
+
+		self.model.eval()
+		loader = self.data_loader['test']
+		gallary_feat = []
+		gallary_lab = []
+		trip = TripletLoss(prec = 1)
+		loader.dataset.set_mode(0)
+		flag = 'mean' in dir(self)
+		for data, label in loader:
+			# get data
+			if not flag:
+				data = data.float().to(self.dev)
+			else:
+				data = data.float()
+				data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
+			label = label.long().to(self.dev)
+			with torch.no_grad():
+				output = self.model(data)
+			gallary_feat.append(output)
+			gallary_lab.append(label)
+		gallary_feat = torch.cat(gallary_feat)
+		gallary_lab = torch.cat(gallary_lab).long()
+		rank_one = []
+		if only_nm:
+			mxr = 2
+		else:
+			mxr = 4
+		for i in range(1,mxr):
+			loader.dataset.set_mode(i)
+			probe_feat = []
+			probe_lab = []
+			for data, label in loader:
+				# get data
+				if not flag:
+					data = data.float().to(self.dev)
+				else:
+					data = data.float()
+					data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
+				label = label.long().to(self.dev)
+				with torch.no_grad():
+					output = self.model(data)
+				probe_feat.append(output)
+				probe_lab.append(label)
+			probe_feat = torch.cat(probe_feat)
+			probe_lab = torch.cat(probe_lab).long()
+			with torch.no_grad():
+				rank_one.append(trip.test(gallary_feat, gallary_lab, probe_feat, probe_lab))
+		if only_nm:
+			rank_one += [0, 0]
+			avg = sum(rank_one) / 1
+			print("Test Result: nm: {:.5f}.".format(rank_one[0]))
+			return rank_one, avg
+		else:
+			avg = sum(rank_one) / 3
+			print("Test Resut: nm: {:.5f}. bg: {:.5f}. cl: {:.5f}. Total: {:.5f}".format(rank_one[0], rank_one[1], rank_one[2], avg))
+			return rank_one, avg
 
 	def show(self, output3, step):
 		temp = []
@@ -596,86 +465,195 @@ class REC_Processor:
 
 	# print(ere)
 
-	def test(self, evaluation=True, only_nm = False):
-
-		self.model.eval()
-		loader = self.data_loader['test']
-		gallary_feat = []
-		gallary_lab = []
-		trip = TripletLoss(prec = 1)
-		loader.dataset.set_mode(0)
-		flag = 'mean' in dir(self)
-		for data, label in loader:
-			# get data
-			if not flag:
-				data = data.squeeze(axis=0).float().to(self.dev)
-			else:
-				data = data.squeeze(axis=0).float()
-				data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
-			label = label.long().to(self.dev)
-			with torch.no_grad():
-				output = self.model(data)
-			gallary_feat.append(output)
-			gallary_lab.append(label)
-		gallary_feat = torch.cat(gallary_feat)
-		gallary_lab = torch.cat(gallary_lab).long()
-		rank_one = []
-		if only_nm:
-			mxr = 2
-		else:
-			mxr = 4
-		for i in range(1,mxr):
-			loader.dataset.set_mode(i)
-			probe_feat = []
-			probe_lab = []
-			for data, label in loader:
-				# get data
-				if not flag:
-					data = data.squeeze(axis=0).float().to(self.dev)
-				else:
-					data = data.squeeze(axis=0).float()
-					data = ((data.permute(0, 2, 3, 4, 1) - self.mean) / self.std).permute(0, 4, 1, 2, 3).to(self.dev)
-				label = label.long().to(self.dev)
-				with torch.no_grad():
-					output = self.model(data)
-				probe_feat.append(output)
-				probe_lab.append(label)
-			probe_feat = torch.cat(probe_feat)
-			probe_lab = torch.cat(probe_lab).long()
-			with torch.no_grad():
-				rank_one.append(trip.test(gallary_feat, gallary_lab, probe_feat, probe_lab))
-		if only_nm:
-			rank_one += [0, 0]
-			avg = sum(rank_one) / 1
-			print("Test Result: nm: {:.5f}.".format(rank_one[0]))
-			return rank_one, avg
-		else:
-			avg = sum(rank_one) / 3
-			print("Test Resut: nm: {:.5f}. bg: {:.5f}. cl: {:.5f}. Total: {:.5f}".format(rank_one[0], rank_one[1], rank_one[2], avg))
-			return rank_one, avg
 
 	@staticmethod
 	def get_parser(add_help=False):
-
-		# parameter priority: command line > config > default
 		parser = argparse.ArgumentParser(
 			add_help=add_help,
 			description='Spatial Temporal Graph Convolution Network')
 
-		# region arguments yapf: disable
-		# evaluation
 		parser.add_argument('--show_topk', type=int, default=[1, 5], nargs='+',
 							help='which Top K accuracy will be shown')
-		# optim
 		parser.add_argument('--base_lr', type=float, default=0.01, help='initial learning rate')
 		parser.add_argument('--step', type=int, default=[], nargs='+',
 							help='the epoch where optimizer reduce the learning rate')
 		parser.add_argument('--optimizer', default='Adam', help='type of optimizer')
 		parser.add_argument('--nesterov', type=bool, default=True, help='use nesterov or not')
 		parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay for optimizer')
-		# endregion yapf: enable
 
 		return parser
 
 # python main.py recognition --phase train -c /home/bird/xuke/st-gcn-master/config/st_gcn/casia-skeleton/train.yaml
 # python main.py recognition  --phase test -c /home/bird/xuke/st-gcn-master/config/st_gcn/casia-skeleton/test.yaml
+
+
+	# def cosine_decay(global_step):
+	# 	global_step = min(global_step, args.rampdown_epoch)
+	# 	cosine_decay = 0.5 * (1 + np.cos(np.pi * global_step / args.rampdown_epoch))
+	# 	decayed = (1 - args.decay_alpha) * cosine_decay + args.decay_alpha
+	# 	decayed_learning_rate = args.lr * decayed
+	# 	return decayed_learning_rate
+
+	# def natural_decay(step):
+	# 	decayed_learning_rate = args.lr * np.exp(-args.decay_rate * step / args.rampdown_epoch)
+	# 	return decayed_learning_rate
+
+	# def cosine_rampdown(current, rampdown_length):
+	#     assert 0 <= current <= rampdown_length
+	#     return max(0., float(.5 * (np.cos(np.pi * current / rampdown_length) + 1)))
+	# def extract2(self, data, label):
+
+	# 	# xf=data[:,:,0:50,:,:]
+	# 	# xb=data[:,:,50:100,:,:]
+
+	# 	# bat=xf.size(0)
+	# 	# bat1=xf.size()
+	# 	# xf = xf.reshape(bat, -1)
+	# 	# mean = xf.mean(dim=1).reshape(bat,-1)
+	# 	# std = xf.std(dim=1, unbiased=False).reshape(bat,-1)
+	# 	# xf = (xf - mean)/(std+1e-5)
+	# 	# xf=xf.reshape(bat1)
+
+	# 	# bat=xb.size(0)
+	# 	# bat1=xb.size()
+	# 	# xb = xb.reshape(bat, -1)
+	# 	# mean = xb.mean(dim=1).reshape(bat,-1)
+	# 	# std = xb.std(dim=1, unbiased=False).reshape(bat,-1)
+	# 	# xb = (xb - mean)/(std+1e-5)
+	# 	# xb=xb.reshape(bat1)
+
+	# 	# data=torch.cat((xf,xb),1)
+	# 	# 100,3,100,18,1
+
+	# 	data = data.contiguous().view(data.size(0), -1)
+	# 	# label = label.contiguous().view(label.size(0), -1)
+
+	# 	a = data[label.gt(0)]
+	# 	label = label * -1 + 1
+	# 	b = data[label.gt(0)]
+
+	# 	data = data.data.cpu().numpy()
+	# 	a = a.data.cpu().numpy()
+	# 	b = b.data.cpu().numpy()
+
+	# 	print(data.shape)
+
+	# 	fig = plt.figure()
+	# 	pca = PCA(n_components=3)
+	# 	pca.fit(data)
+	# 	# print pca.explained_variance_ratio_
+	# 	# print pca.explained_variance_
+	# 	ax = Axes3D(fig, rect=[0, 0, 1, 1], elev=30, azim=20)
+	# 	X = pca.transform(a)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], marker='*', c='red', s=40)
+	# 	# ax.scatter(X[:, 0],X[:, 1].reshape(1.-1),X[:, 2].reshape(1.-1), marker='*',c='red',s=30)
+	# 	X = pca.transform(b)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='g')
+	# 	plt.show()
+
+	# # print(ere)
+
+	# def extract(self, xf, xb):
+	# 	# print(data.size())
+	# 	# print(data[0,:,0,1,0])
+	# 	# #print(ere)0
+	# 	# xf=data[:,:,0:50,:,:]
+	# 	# xb=data[:,:,50:100,:,:]
+
+	# 	# #xf=data
+	# 	xf = xf.contiguous().view(xf.size(0), -1)
+	# 	xb = xb.contiguous().view(xb.size(0), -1)
+	# 	# bat=xf.size(0)
+	# 	# bat1=xf.size()
+	# 	# xf = xf.reshape(bat, -1)
+	# 	# mean = xf.mean(dim=1).reshape(bat,-1)
+	# 	# std = xf.std(dim=1, unbiased=False).reshape(bat,-1)
+	# 	# xf = (xf - mean)/(std+1e-5)
+	# 	# xf=xf.reshape(bat1)
+
+	# 	# print(xf,xb)
+	# 	# print(ere)
+	# 	# print(ere)
+	# 	# print(xf[:,:6],xb[:,:6])
+
+	# 	# mean = xf.mean(dim=0)
+	# 	# std = xf.std(dim=0, unbiased=False)
+	# 	# print(mean,std)
+	# 	# xf = (xf - mean)/(std+1e-5)
+
+	# 	xf = xf.data.cpu().numpy()
+	# 	# xf=xf.astype(np.float)
+	# 	# print(ere)
+	# 	kk = 10
+	# 	temp = xf[0:1 * kk, :]
+	# 	print(temp)
+	# 	# temp=np.vstack((temp,recon_y1[0:1*kk,:]))
+	# 	temp1 = xf[1 * kk:2 * kk, :]
+	# 	# print(temp1)
+	# 	# temp1=np.vstack((temp1,recon_y1[1*kk:2*kk,:]))
+	# 	temp2 = xf[2 * kk:3 * kk, :]
+	# 	# print(temp2)
+	# 	# temp2=np.vstack((temp2,recon_y1[2*kk:3*kk,:]))
+	# 	temp3 = xf[3 * kk:4 * kk, :]
+	# 	# print(temp3)
+	# 	# temp3=np.vstack((temp3,recon_y1[3*kk:4*kk,:]))
+	# 	temp4 = xf[4 * kk:5 * kk, :]
+	# 	print(temp4)
+	# 	# temp4=np.vstack((temp4,recon_y1[4*kk:5*kk,:]))
+	# 	temp5 = xf[5 * kk:6 * kk, :]
+	# 	# print(temp5)
+	# 	temp6 = xf[6 * kk:7 * kk, :]
+	# 	# temp5=np.vstack((temp5,recon_y1[5*kk:6*kk,:]))
+	# 	# print(temp4,temp5)
+
+	# 	temp111 = temp
+	# 	temp111 = np.vstack((temp111, temp1))
+	# 	temp111 = np.vstack((temp111, temp2))
+	# 	temp111 = np.vstack((temp111, temp3))
+	# 	temp111 = np.vstack((temp111, temp4))
+	# 	temp111 = np.vstack((temp111, temp5))
+	# 	temp111 = np.vstack((temp111, temp6))
+	# 	print(temp111.shape)
+
+	# 	fig = plt.figure()
+	# 	pca = PCA(n_components=3)
+	# 	pca.fit(temp111)
+	# 	# print pca.explained_variance_ratio_
+	# 	# print pca.explained_variance_
+	# 	ax = Axes3D(fig, rect=[0, 0, 1, 1], elev=30, azim=20)
+
+	# 	X = pca.transform(temp)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], marker='*', c='red', s=40)
+	# 	# ax.scatter(X[:, 0],X[:, 1].reshape(1.-1),X[:, 2].reshape(1.-1), marker='*',c='red',s=30)
+
+	# 	X = pca.transform(temp1)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='g')
+
+	# 	X = pca.transform(temp2)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='b')
+
+	# 	X = pca.transform(temp3)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='y')
+
+	# 	X = pca.transform(temp4)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='c')
+
+	# 	X = pca.transform(temp5)
+	# 	# print(X)
+	# 	ax.scatter(X[:, 0], X[:, 1], X[:, 2], s=40, marker='*', c='k')
+
+	# 	# X = pca.transform(temp6)
+	# 	# #print(X)
+	# 	# ax.scatter(X[:, 0],X[:, 1],X[:, 2],s=40, marker='*',c='m')
+	# 	# codebook=center_point[i]
+	# 	# plt.scatter(codebook[:, 0], codebook[:, 1],codebook[:, 2],c='red',marker='o',linewidths=5)
+	# 	plt.show()
+
+	# # print(ere)

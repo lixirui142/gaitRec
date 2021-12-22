@@ -153,10 +153,10 @@ class Model(nn.Module):
 
         # global pooling
         # x = F.max_pool2d(x, x.size()[2:])
-        # x = F.max_pool1d(x.mean(2), x.size()[3])
+        x = F.max_pool1d(x.mean(dim=2), x.size()[3])
         # x = x.view(N, M, -1 , 1, 1).mean(dim=1)
-        x = F.max_pool2d(x, x.size()[2:])
-        x = x.view(N, M, -1 , 1, 1).mean(dim=1)
+        #x = F.max_pool2d(x, x.size()[2:])
+        x = x.view(N, M, -1).mean(dim=1)
         if self.norm:
             x = x / torch.norm(x, dim=1, keepdim=True)
         return x
@@ -247,23 +247,23 @@ class st_gcn(nn.Module):
             self.residual = lambda x: x
 
         else:
-            self.residual = nn.Sequential(
-                nn.Conv2d(
-                    in_channels,
-                    out_channels,
-                    kernel_size=(3, 1),
-                    stride=(stride, 1),
-                    padding=(1, 0)),
-                nn.BatchNorm2d(out_channels),
-            )
             # self.residual = nn.Sequential(
             #     nn.Conv2d(
             #         in_channels,
             #         out_channels,
-            #         kernel_size=1,
-            #         stride=(stride, 1)),
+            #         kernel_size=(3, 1),
+            #         stride=(stride, 1),
+            #         padding=(1, 0)),
             #     nn.BatchNorm2d(out_channels),
             # )
+            self.residual = nn.Sequential(
+                nn.Conv2d(
+                    in_channels,
+                    out_channels,
+                    kernel_size=1,
+                    stride=(stride, 1)),
+                nn.BatchNorm2d(out_channels),
+            )
 
 
         self.relu = nn.ReLU(inplace=True)

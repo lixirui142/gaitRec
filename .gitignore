@@ -7,5 +7,5 @@ data
 dvs
 .*
 openpose
-script
+*.ipynb
 wandb
