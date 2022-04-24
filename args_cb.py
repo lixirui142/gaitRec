@@ -8,17 +8,17 @@ def get_args(null_args = False):
     else:
         args = parser.parse_args()
 
-    args.data_dir = "G:\program\github\gaitRec\data\gait_prime_joints_process"
+    #args.data_dir = "G:\program\github\gaitRec\data\cb_prime_joints_process"
     # args.data_dir="G:/xuke/CASIA-B/prime-joints/"
-    #args.data_dir = "G:/lxr/gaitRec/data/gait_prime_joints_process/"
+    args.data_dir = "G:/lxr/gaitRec/data/cb_prime_joints_process/"
     # args.data_dir="C:/Users/admn/Desktop/gait prp/gait-gcn/data/prime-joints/"
     args.threads = 1
     args.batchSize = 64
-    args.lr = 0.1
+    args.base_lr = 0.1
     args.epoch = 200
     args.gamma = 0.01
     args.decay_epoch = args.epoch
-    args.name = "test_cb"
+    args.name = "cb_process"
     args.save_dir = "model/" + args.name
     args.result_dir = "result/" + args.name
     # args.viewset = ["000", "018", "036", "054", "072", "090", "108", "126", "144", "162", "180"]

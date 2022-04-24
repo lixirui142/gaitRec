@@ -475,12 +475,13 @@ class REC_Processor:
 
 		parser.add_argument('--show_topk', type=int, default=[1, 5], nargs='+',
 							help='which Top K accuracy will be shown')
-		parser.add_argument('--base_lr', type=float, default=0.01, help='initial learning rate')
+		parser.add_argument('--base_lr', type=float, default=0.001, help='initial learning rate')
 		parser.add_argument('--step', type=int, default=[], nargs='+',
 							help='the epoch where optimizer reduce the learning rate')
 		parser.add_argument('--optimizer', default='Adam', help='type of optimizer')
 		parser.add_argument('--nesterov', type=bool, default=True, help='use nesterov or not')
 		parser.add_argument('--weight_decay', type=float, default=0.0001, help='weight decay for optimizer')
+		parser.add_argument('--dataset', default = "casiab", type = str, choice=["dvs", "casiab"])
 
 		return parser
 
